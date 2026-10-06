@@ -18,6 +18,8 @@
     <div class="navbar-nav">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#submit" class="nav-link">Submit Complaint</a>
+      <a href="#recent-complaints" class="nav-link">Recent Issues</a>
+      <a href="complaints.html" class="nav-link">All Complaints 📋</a>
       <a href="admin-login.html" class="btn-nav-admin">Admin Portal 🔐</a>
     </div>
   </nav>
@@ -26,7 +28,7 @@
   <section class="hero" id="home">
     <div class="hero-blob hero-blob-1"></div>
     <div class="hero-blob hero-blob-2"></div>
-    <div class="hero-content">
+    <div class="hero-content" style="max-width: 760px;">
       <div class="hero-badge">
         <span>🎓</span> CampusFlow
       </div>
@@ -34,13 +36,67 @@
         Your Voice,<br />
         <span>Heard &amp; Resolved</span>
       </h1>
-      <p>
+      <p style="margin-bottom: 28px;">
         Submit campus complaints in seconds. Our AI-powered system categorizes,
         prioritizes, and routes your issue to the right department automatically.
       </p>
-      <a href="#submit" class="btn btn-primary" style="font-size:1rem; padding: 14px 36px;">
-        📝 Submit a Complaint
-      </a>
+
+      <!-- ══ Complaint Form Card (Inside Hero) ═════════════════ -->
+      <div class="complaint-wrapper" id="submit" style="text-align: left; max-width: 680px; margin: 0 auto;">
+        <div class="complaint-card">
+          <div class="complaint-card-header">
+            <h2>📝 Submit a Complaint</h2>
+            <p>Describe your issue and we'll take care of the rest.</p>
+          </div>
+          <div class="complaint-card-body">
+            <form id="complaint-form" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="complaint-text">
+                  Describe Your Complaint <span class="required">*</span>
+                </label>
+                <textarea
+                  id="complaint-text"
+                  class="form-control"
+                  placeholder="E.g. The projector in Room 301 has been broken for two weeks and no one has fixed it…"
+                  maxlength="2000"
+                  rows="5"
+                ></textarea>
+                <div class="form-hint">
+                  <span id="char-count">0</span>/2000 characters — minimum 20 required
+                </div>
+                <div class="form-error" id="complaint-error">
+                  Please describe your complaint (minimum 20 characters).
+                </div>
+              </div>
+
+              <button class="btn btn-primary btn-full" type="submit" id="submit-btn" style="min-height: 48px;">
+                <span id="btn-text">Submit Complaint 🚀</span>
+              </button>
+            </form>
+
+            <!-- Result Display -->
+            <div class="result-area" id="result-area"></div>
+          </div>
+        </div>
+
+        <!-- Quick Tips Bar -->
+        <div style="
+          margin-top: 14px;
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(8px);
+          border-radius: var(--radius);
+          padding: 12px 18px;
+          border: 1px solid rgba(255,255,255,0.2);
+          color: rgba(255,255,255,0.9);
+          font-size: .82rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        ">
+          <span>💡</span>
+          <span><strong>Tip:</strong> Mention specific room numbers or campus locations for fastest resolution.</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -67,102 +123,91 @@
     </div>
   </div>
 
+  <!-- ══ Recent Campus Complaints ══════════════════════════════ -->
+  <section class="section" id="recent-complaints" style="background: var(--bg); padding-top: 60px; padding-bottom: 80px;">
+    <div class="section-container" style="max-width: 1140px; margin: 0 auto; padding: 0 20px;">
+      <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+        <span class="eyebrow">Campus Transparency</span>
+        <h2>📋 Recent Campus Complaints</h2>
+        <p>Live feed of reported issues across campus and their current resolution status.</p>
+      </div>
+
+      <!-- Complaints Table / List Container -->
+      <div id="home-complaints-container">
+        <div class="empty-state">
+          <span class="empty-icon">⏳</span>
+          <h3>Loading complaints…</h3>
+          <p>Fetching latest campus updates…</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons: Show More & Show All -->
+      <div class="complaints-actions-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:28px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="show-more-btn" style="display:none; padding: 12px 28px; font-size:.9rem; font-weight:600;">
+          ⬇️ Show More (<span id="showing-count">5</span> / <span id="total-count">0</span>)
+        </button>
+        <a href="complaints.html" class="btn btn-primary" id="show-all-btn" style="padding: 12px 28px; font-size:.9rem; font-weight:600;">
+          📋 Show All Complaints →
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ How It Works ════════════════════════════════════════ -->
-  <section class="section" id="how-it-works" style="background: var(--bg); padding-top: 100px;">
-    <div class="section-header">
-      <span class="eyebrow">Simple Process</span>
-      <h2>How CampusFlow Works</h2>
-      <p>Three easy steps to get your campus issue resolved fast.</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <span class="step-number">1</span>
-        <div class="step-icon">📝</div>
-        <div class="step-title">Describe Your Issue</div>
-        <p class="step-desc">
-          Write about your campus problem in plain language — anything from
-          maintenance issues to academic concerns.
-        </p>
+  <section class="section" id="how-it-works" style="background: #ffffff; padding: 70px 20px;">
+    <div class="section-container" style="max-width: 1000px; margin: 0 auto;">
+      <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+        <span class="eyebrow">Simple Workflow</span>
+        <h2>How CampusFlow Works</h2>
+        <p>Three straightforward steps from submitting your problem to verified resolution.</p>
       </div>
-      <div class="step-card">
-        <span class="step-number">2</span>
-        <div class="step-icon">✅</div>
-        <div class="step-title">Auto-Categorized by AI</div>
-        <p class="step-desc">
-          Our system instantly classifies your complaint, assigns urgency,
-          and routes it to the correct department.
-        </p>
-      </div>
-      <div class="step-card">
-        <span class="step-number">3</span>
-        <div class="step-icon">🔍</div>
-        <div class="step-title">Track &amp; Get Resolved</div>
-        <p class="step-desc">
-          Receive a unique ticket ID. Admin reviews and resolves your complaint
-          — you get notified every step of the way.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ Complaint Form ═══════════════════════════════════════ -->
-  <section class="complaint-section" id="submit">
-    <div class="complaint-wrapper">
-      <div class="complaint-card">
-        <div class="complaint-card-header">
-          <h2>📝 Submit a Complaint</h2>
-          <p>Describe your issue and we'll take care of the rest.</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-number">1</span>
+          <div class="step-icon">📝</div>
+          <div class="step-title">Describe Your Issue</div>
+          <p class="step-desc">
+            Write about your campus problem in natural language — from broken equipment to Wi-Fi drops.
+          </p>
         </div>
-        <div class="complaint-card-body">
-          <form id="complaint-form" novalidate>
-            <div class="form-group">
-              <label class="form-label" for="complaint-text">
-                Describe Your Complaint <span class="required">*</span>
-              </label>
-              <textarea
-                id="complaint-text"
-                class="form-control"
-                placeholder="E.g. The projector in Room 301 has been broken for two weeks and no one has fixed it…"
-                maxlength="2000"
-                rows="6"
-              ></textarea>
-              <div class="form-hint">
-                <span id="char-count">0</span>/2000 characters — minimum 20 required
-              </div>
-              <div class="form-error" id="complaint-error">
-                Please describe your complaint (minimum 20 characters).
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-full" type="submit" id="submit-btn">
-              <span id="btn-text">Submit Complaint 🚀</span>
-            </button>
-          </form>
-
-          <!-- Result Display -->
-          <div class="result-area" id="result-area"></div>
+        <div class="step-card">
+          <span class="step-number">2</span>
+          <div class="step-icon">🤖</div>
+          <div class="step-title">AI Powered Routing</div>
+          <p class="step-desc">
+            CampusFlow classifies the issue, evaluates its urgency, and directs it to the right team.
+          </p>
         </div>
-      </div>
-
-      <!-- Tips Card -->
-      <div style="
-        margin-top: 20px;
-        background: linear-gradient(135deg, #ede9fe, #e0f2fe);
-        border-radius: var(--radius-lg);
-        padding: 20px 24px;
-        border: 1px solid rgba(79,70,229,.15);
-      ">
-        <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px;">
-          💡 Tips for a Great Complaint
+        <div class="step-card">
+          <span class="step-number">3</span>
+          <div class="step-icon">✅</div>
+          <div class="step-title">Track to Resolution</div>
+          <p class="step-desc">
+            Get an instant ticket ID. The administration team reviews and marks the issue resolved.
+          </p>
         </div>
-        <ul style="font-size:.875rem; color: var(--text-muted); line-height:2; padding-left:16px; list-style:disc;">
-          <li>Be specific — mention the location, time, and people involved.</li>
-          <li>Describe the impact — how does it affect you or others?</li>
-          <li>Keep it factual and respectful for fastest resolution.</li>
-        </ul>
       </div>
     </div>
   </section>
+
+  <!-- ══ Ticket Detail Modal Popup ════════════════════════════ -->
+  <div class="modal-overlay" id="home-modal-overlay">
+    <div class="modal modal-detail" id="home-modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 id="home-modal-ticket-id">Ticket Details</h2>
+          <span id="home-modal-ticket-status"></span>
+        </div>
+        <button class="modal-close-btn" id="home-modal-close-btn" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body" id="home-modal-body">
+        <!-- Dynamically populated by complaint.js -->
+      </div>
+      <div class="modal-footer" id="home-modal-footer">
+        <button class="btn btn-secondary" id="home-modal-close-action">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══ Footer ══════════════════════════════════════════════ -->
   <footer class="footer">

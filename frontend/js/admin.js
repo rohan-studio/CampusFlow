@@ -122,6 +122,7 @@ function initLoginPage() {
 let allTickets = [];
 let activeStatusFilter  = 'all';
 let activeUrgencyFilter = 'all';
+let currentView = 'table'; // 'table' or 'cards'
 
 function initDashboardPage() {
   /* Auth guard */
@@ -142,6 +143,26 @@ function initDashboardPage() {
       sessionStorage.removeItem('cf_token');
       sessionStorage.removeItem('cf_username');
       window.location.href = 'admin-login.html';
+    });
+  }
+
+  /* View switchers */
+  const viewTableBtn = document.getElementById('view-table-btn');
+  const viewCardsBtn = document.getElementById('view-cards-btn');
+
+  if (viewTableBtn && viewCardsBtn) {
+    viewTableBtn.addEventListener('click', () => {
+      currentView = 'table';
+      viewTableBtn.classList.add('active');
+      viewCardsBtn.classList.remove('active');
+      renderTickets();
+    });
+
+    viewCardsBtn.addEventListener('click', () => {
+      currentView = 'cards';
+      viewCardsBtn.classList.add('active');
+      viewTableBtn.classList.remove('active');
+      renderTickets();
     });
   }
 
@@ -168,6 +189,24 @@ function initDashboardPage() {
   /* Refresh button */
   const refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) refreshBtn.addEventListener('click', fetchTickets);
+
+  /* Modal Close Listeners */
+  const modalOverlay = document.getElementById('ticket-modal-overlay');
+  const modalCloseBtn = document.getElementById('modal-close-btn');
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', closeTicketModal);
+  }
+
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeTicketModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTicketModal();
+  });
 
   fetchTickets();
 }
@@ -231,13 +270,13 @@ function getFilteredTickets() {
 }
 
 function renderTickets() {
-  const grid = document.getElementById('tickets-grid');
-  if (!grid) return;
+  const container = document.getElementById('tickets-grid');
+  if (!container) return;
 
   const filtered = getFilteredTickets();
 
   if (filtered.length === 0) {
-    grid.innerHTML = `
+    container.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">🎉</span>
         <h3>No tickets found!</h3>
@@ -246,12 +285,109 @@ function renderTickets() {
     return;
   }
 
-  grid.innerHTML = filtered.map(ticket => buildTicketCard(ticket)).join('');
+  if (currentView === 'table') {
+    container.innerHTML = buildTicketTable(filtered);
 
-  /* Attach resolve button listeners */
-  grid.querySelectorAll('[data-resolve-id]').forEach(btn => {
-    btn.addEventListener('click', () => handleResolve(btn.dataset.resolveId, btn));
-  });
+    /* Row click & view button click -> open modal */
+    container.querySelectorAll('.ticket-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-resolve-id]')) return; // ignore resolve button click
+        openTicketModal(row.dataset.ticketId);
+      });
+    });
+
+    container.querySelectorAll('[data-view-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openTicketModal(btn.dataset.viewId);
+      });
+    });
+
+    /* Attach direct resolve button listeners */
+    container.querySelectorAll('[data-resolve-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleResolve(btn.dataset.resolveId, btn);
+      });
+    });
+
+  } else {
+    /* Cards View */
+    container.innerHTML = `
+      <div class="tickets-grid">
+        ${filtered.map(ticket => buildTicketCard(ticket)).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll('.ticket-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-resolve-id]')) return;
+        openTicketModal(card.dataset.ticketId);
+      });
+    });
+
+    container.querySelectorAll('[data-resolve-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleResolve(btn.dataset.resolveId, btn);
+      });
+    });
+  }
+}
+
+function buildTicketTable(tickets) {
+  return `
+    <div class="table-responsive">
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>Ticket ID</th>
+            <th>Problem Summary</th>
+            <th>Category</th>
+            <th>Department</th>
+            <th>Location</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tickets.map(t => {
+            const isResolved = t.status?.toLowerCase() === 'resolved';
+            const urgencyKey = t.urgency || 'Low';
+            const rawDesc    = t.problem || t.description || 'No description provided';
+            const shortDesc  = rawDesc.length > 55 ? rawDesc.slice(0, 55) + '…' : rawDesc;
+            const displayId  = t.ticket_id || `#${t.id}`;
+            const targetId   = t.ticket_id || t.id;
+
+            return `
+              <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click row to view full details">
+                <td><span class="ticket-id-badge">${displayId}</span></td>
+                <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
+                <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
+                <td><span style="font-weight: 500;">🏫 ${escapeHtml(t.department || '—')}</span></td>
+                <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
+                <td>${urgencyBadge(urgencyKey)}</td>
+                <td>${statusBadge(t.status)}</td>
+                <td style="text-align: right;">
+                  <div class="table-actions" style="justify-content: flex-end;">
+                    <button class="btn-view-details" data-view-id="${targetId}" title="View details in popup">
+                      👁️ View
+                    </button>
+                    ${!isResolved ? `
+                      <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved">
+                        ✔ Resolve
+                      </button>
+                    ` : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function buildTicketCard(ticket) {
@@ -266,7 +402,10 @@ function buildTicketCard(ticket) {
 
   return `
     <div class="ticket-card urgency-${urgencyKey.toLowerCase()} ${isResolved ? 'resolved' : ''}"
-         id="ticket-${resolveTargetId}">
+         data-ticket-id="${resolveTargetId}"
+         id="ticket-${resolveTargetId}"
+         style="cursor: pointer;"
+         title="Click card to view details">
       <div>
         <div class="ticket-meta">
           <span class="ticket-id">${displayId}</span>
@@ -290,6 +429,9 @@ function buildTicketCard(ticket) {
       </div>
 
       <div class="ticket-actions">
+        <button class="btn-view-details" data-view-id="${resolveTargetId}">
+          👁️ View Details
+        </button>
         ${!isResolved ? `
           <button
             class="btn btn-success btn-sm"
@@ -302,6 +444,96 @@ function buildTicketCard(ticket) {
       </div>
     </div>
   `;
+}
+
+/* ── Modal Details Popup ──────────────────────────────────── */
+function openTicketModal(ticketId) {
+  const ticket = allTickets.find(t =>
+    String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
+  );
+
+  if (!ticket) return;
+
+  const overlay    = document.getElementById('ticket-modal-overlay');
+  const titleEl    = document.getElementById('modal-ticket-id');
+  const statusEl   = document.getElementById('modal-ticket-status');
+  const bodyEl     = document.getElementById('modal-body');
+  const footerEl   = document.getElementById('modal-footer');
+
+  if (!overlay || !bodyEl) return;
+
+  const displayId  = ticket.ticket_id || `#${ticket.id}`;
+  const isResolved = ticket.status?.toLowerCase() === 'resolved';
+  const targetId   = ticket.ticket_id || ticket.id;
+
+  if (titleEl) titleEl.textContent = `Ticket Details — ${displayId}`;
+  if (statusEl) statusEl.innerHTML = statusBadge(ticket.status);
+
+  bodyEl.innerHTML = `
+    <div class="modal-info-grid">
+      <div class="modal-info-item">
+        <div class="modal-info-label">Category</div>
+        <div class="modal-info-value"><span class="badge badge-accent">${escapeHtml(ticket.category || 'General')}</span></div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Urgency Level</div>
+        <div class="modal-info-value">${urgencyBadge(ticket.urgency || 'Low')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Assigned Department</div>
+        <div class="modal-info-value">🏫 ${escapeHtml(ticket.department || 'Not Assigned')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Campus Location</div>
+        <div class="modal-info-value">📍 ${escapeHtml(ticket.location || 'Not Specified')}</div>
+      </div>
+
+      <div class="modal-info-item" style="grid-column: 1 / -1;">
+        <div class="modal-info-label">Date Ticket Raised</div>
+        <div class="modal-info-value" style="font-weight: 500; color: var(--text-muted);">${formatDate(ticket.created_at)}</div>
+      </div>
+    </div>
+
+    <div class="modal-problem-box">
+      <h4>Complaint Description</h4>
+      <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
+    </div>
+  `;
+
+  footerEl.innerHTML = `
+    ${!isResolved ? `
+      <button class="btn btn-success" id="modal-resolve-btn" data-modal-resolve="${targetId}">
+        ✔ Mark as Resolved
+      </button>
+    ` : `
+      <span class="badge badge-resolved" style="padding: 8px 16px; font-size: .85rem;">✅ Resolved</span>
+    `}
+    <button class="btn btn-secondary" id="modal-close-action">Close</button>
+  `;
+
+  /* Attach modal buttons */
+  const modalResolveBtn = document.getElementById('modal-resolve-btn');
+  if (modalResolveBtn) {
+    modalResolveBtn.addEventListener('click', async () => {
+      await handleResolve(targetId, modalResolveBtn);
+      openTicketModal(targetId); // refresh modal state to show resolved
+    });
+  }
+
+  const modalCloseAction = document.getElementById('modal-close-action');
+  if (modalCloseAction) {
+    modalCloseAction.addEventListener('click', closeTicketModal);
+  }
+
+  overlay.classList.add('visible');
+}
+
+function closeTicketModal() {
+  const overlay = document.getElementById('ticket-modal-overlay');
+  if (overlay) overlay.classList.remove('visible');
 }
 
 async function handleResolve(ticketId, btn) {
@@ -330,7 +562,8 @@ async function handleResolve(ticketId, btn) {
 }
 
 function escapeHtml(str) {
-  return str
+  if (!str) return '';
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

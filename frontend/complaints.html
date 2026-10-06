@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Complaints — CampusFlow</title>
+  <meta name="description" content="View, search, and track all reported campus complaints on CampusFlow." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══ Navbar ══════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <div class="brand-icon">🎓</div>
+      CampusFlow
+    </a>
+    <div class="navbar-nav">
+      <a href="index.html" class="nav-link">← Home</a>
+      <a href="index.html#submit" class="nav-link">Submit Complaint</a>
+      <a href="admin-login.html" class="btn-nav-admin">Admin Portal 🔐</a>
+    </div>
+  </nav>
+
+  <!-- ══ Layout ══════════════════════════════════════════════ -->
+  <div class="dashboard-layout" style="min-height: calc(100vh - 70px);">
+    <main class="dashboard-main" style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+
+      <!-- Title Row -->
+      <div class="dashboard-title-row">
+        <div>
+          <h1>📋 All Campus Complaints</h1>
+          <p>Browse, search, and monitor every reported campus issue in real time.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <a href="index.html#submit" class="btn btn-primary" style="padding:8px 18px; font-size:.85rem;">
+            ➕ New Complaint
+          </a>
+          <button class="btn btn-secondary btn-sm" id="refresh-btn" style="gap:6px; padding:8px 16px; font-size:.85rem;">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Dashboard Stats -->
+      <div class="dash-stats">
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">Total Reported</div>
+          <div class="dash-stat-value total" id="stat-total">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">⏳ Pending</div>
+          <div class="dash-stat-value pending" id="stat-pending">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">✅ Resolved</div>
+          <div class="dash-stat-value resolved" id="stat-resolved">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">🔴 High Urgency</div>
+          <div class="dash-stat-value high" id="stat-high">—</div>
+        </div>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:24px; box-shadow:var(--shadow-sm);">
+        <div style="margin-bottom:14px;">
+          <input
+            type="text"
+            id="search-input"
+            class="form-control"
+            placeholder="🔍 Search complaints by keyword, location, ticket ID..."
+            style="width:100%; font-size:.9rem; padding:10px 16px;"
+          />
+        </div>
+
+        <div class="filter-row" style="margin-bottom:0;">
+          <span class="filter-group-label">Status:</span>
+          <button class="filter-btn active" data-status-filter="all">All</button>
+          <button class="filter-btn" data-status-filter="pending">⏳ Pending</button>
+          <button class="filter-btn" data-status-filter="resolved">✅ Resolved</button>
+
+          <div class="filter-divider"></div>
+
+          <span class="filter-group-label">Urgency:</span>
+          <button class="filter-btn active" data-urgency-filter="all">All</button>
+          <button class="filter-btn" data-urgency-filter="High">🔴 High</button>
+          <button class="filter-btn" data-urgency-filter="Medium">🟡 Medium</button>
+          <button class="filter-btn" data-urgency-filter="Low">🟢 Low</button>
+        </div>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="spinner-wrap" id="spinner" style="display:none;">
+        <div class="spinner"></div>
+        <span>Loading complaints…</span>
+      </div>
+
+      <!-- Complaints Container -->
+      <div id="complaints-list-container">
+        <div class="empty-state">
+          <span class="empty-icon">⏳</span>
+          <h3>Loading complaints…</h3>
+          <p>Please wait while we fetch the latest data.</p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>© 2025 <strong>CampusFlow</strong> — Campus Complaint Management System. Built with ❤️ for students.</p>
+    </footer>
+  </div>
+
+  <!-- ══ Ticket Detail Modal Popup ════════════════════════════ -->
+  <div class="modal-overlay" id="complaint-modal-overlay">
+    <div class="modal modal-detail" id="complaint-modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 id="modal-ticket-id">Ticket Details</h2>
+          <span id="modal-ticket-status"></span>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Injected by complaints-page.js -->
+      </div>
+      <div class="modal-footer" id="modal-footer">
+        <button class="btn btn-secondary" id="modal-close-action">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Scripts ═════════════════════════════════════════════ -->
+  <script src="js/api.js"></script>
+  <script src="js/complaints-page.js"></script>
+</body>
+</html>

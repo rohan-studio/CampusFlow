@@ -42,9 +42,17 @@
           <h1>📋 Complaint Dashboard</h1>
           <p>Review, filter, and resolve student complaints.</p>
         </div>
-        <button class="btn btn-secondary" id="refresh-btn" style="gap:6px;">
-          🔄 Refresh
-        </button>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="filter-btn active" id="view-table-btn" style="padding:6px 14px; font-size:.8rem;">
+            📊 Table View
+          </button>
+          <button class="filter-btn" id="view-cards-btn" style="padding:6px 14px; font-size:.8rem;">
+            🎴 Cards View
+          </button>
+          <button class="btn btn-secondary btn-sm" id="refresh-btn" style="gap:6px; padding:6px 14px; font-size:.8rem;">
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       <!-- Dashboard Stats -->
@@ -89,13 +97,32 @@
         <span>Loading tickets…</span>
       </div>
 
-      <!-- Tickets Grid -->
-      <div class="tickets-grid" id="tickets-grid">
+      <!-- Tickets Container -->
+      <div class="tickets-container" id="tickets-grid">
         <!-- Rendered by admin.js -->
         <div class="empty-state">
           <span class="empty-icon">📭</span>
           <h3>Loading tickets…</h3>
           <p>Please wait while we fetch complaints.</p>
+        </div>
+      </div>
+
+      <!-- ══ Ticket Detail Modal ══════════════════════════════════ -->
+      <div class="modal-overlay" id="ticket-modal-overlay">
+        <div class="modal modal-detail" id="ticket-modal">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <h2 id="modal-ticket-id">Ticket Details</h2>
+              <span id="modal-ticket-status"></span>
+            </div>
+            <button class="modal-close-btn" id="modal-close-btn" aria-label="Close modal">✕</button>
+          </div>
+          <div class="modal-body" id="modal-body">
+            <!-- Injected by admin.js -->
+          </div>
+          <div class="modal-footer" id="modal-footer">
+            <!-- Injected by admin.js -->
+          </div>
         </div>
       </div>
 

@@ -209,8 +209,9 @@ function initComplaintForm() {
       const charCount = document.getElementById('char-count');
       if (charCount) charCount.textContent = '0';
 
-      /* Refresh home stats */
+      /* Refresh home stats & complaints table */
       loadHomeStats();
+      fetchAndRenderHomeComplaints();
 
     } catch (err) {
       console.error('Complaint submission error:', err);
@@ -249,8 +250,221 @@ async function loadHomeStats() {
   }
 }
 
+/* ── Recent Complaints Feed (5 items, Show More, Show All) ── */
+let allHomeTickets = [];
+let homeDisplayLimit = 5;
+
+async function fetchAndRenderHomeComplaints() {
+  const container = document.getElementById('home-complaints-container');
+  if (!container) return;
+
+  try {
+    allHomeTickets = await getAllTickets();
+    renderHomeComplaints();
+  } catch (err) {
+    console.error('Failed to load recent complaints:', err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">⚠️</span>
+        <h3>Could not load recent complaints</h3>
+        <p>Make sure the backend is running. We will keep checking.</p>
+      </div>`;
+  }
+}
+
+function renderHomeComplaints() {
+  const container = document.getElementById('home-complaints-container');
+  const showMoreBtn = document.getElementById('show-more-btn');
+  const showingCountEl = document.getElementById('showing-count');
+  const totalCountEl = document.getElementById('total-count');
+
+  if (!container) return;
+
+  if (allHomeTickets.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🎉</span>
+        <h3>No complaints reported yet!</h3>
+        <p>All campus facilities are currently in great condition.</p>
+      </div>`;
+    if (showMoreBtn) showMoreBtn.style.display = 'none';
+    return;
+  }
+
+  const visibleTickets = allHomeTickets.slice(0, homeDisplayLimit);
+
+  if (showingCountEl) showingCountEl.textContent = visibleTickets.length;
+  if (totalCountEl)   totalCountEl.textContent   = allHomeTickets.length;
+
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>Ticket ID</th>
+            <th>Problem Summary</th>
+            <th>Category</th>
+            <th>Department</th>
+            <th>Location</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${visibleTickets.map(t => {
+            const isResolved = t.status?.toLowerCase() === 'resolved';
+            const urgencyKey = t.urgency || 'Low';
+            const rawDesc    = t.problem || t.description || 'No description provided';
+            const shortDesc  = rawDesc.length > 55 ? rawDesc.slice(0, 55) + '…' : rawDesc;
+            const displayId  = t.ticket_id || `#${t.id}`;
+            const targetId   = t.ticket_id || t.id;
+
+            return `
+              <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click to view complete complaint details">
+                <td><span class="ticket-id-badge">${displayId}</span></td>
+                <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
+                <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
+                <td><span style="font-weight: 500;">🏫 ${escapeHtml(t.department || '—')}</span></td>
+                <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
+                <td>${getUrgencyBadge(urgencyKey)}</td>
+                <td>${getStatusBadge(t.status)}</td>
+                <td style="text-align: right;">
+                  <button class="btn-view-details" data-view-id="${targetId}">
+                    👁️ View
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  /* Attach click listeners */
+  container.querySelectorAll('.ticket-row').forEach(row => {
+    row.addEventListener('click', () => openHomeModal(row.dataset.ticketId));
+  });
+
+  container.querySelectorAll('[data-view-id]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openHomeModal(btn.dataset.viewId);
+    });
+  });
+
+  /* Show More Button Visibility */
+  if (showMoreBtn) {
+    if (allHomeTickets.length > homeDisplayLimit) {
+      showMoreBtn.style.display = 'inline-flex';
+    } else {
+      showMoreBtn.style.display = 'none';
+    }
+  }
+}
+
+/* ── Student Details Modal Popup ──────────────────────────── */
+function openHomeModal(ticketId) {
+  const ticket = allHomeTickets.find(t =>
+    String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
+  );
+
+  if (!ticket) return;
+
+  const overlay  = document.getElementById('home-modal-overlay');
+  const titleEl  = document.getElementById('home-modal-ticket-id');
+  const statusEl = document.getElementById('home-modal-ticket-status');
+  const bodyEl   = document.getElementById('home-modal-body');
+
+  if (!overlay || !bodyEl) return;
+
+  const displayId = ticket.ticket_id || `#${ticket.id}`;
+
+  if (titleEl) titleEl.textContent = `Ticket Details — ${displayId}`;
+  if (statusEl) statusEl.innerHTML = getStatusBadge(ticket.status);
+
+  bodyEl.innerHTML = `
+    <div class="modal-info-grid">
+      <div class="modal-info-item">
+        <div class="modal-info-label">Category</div>
+        <div class="modal-info-value"><span class="badge badge-accent">${escapeHtml(ticket.category || 'General')}</span></div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Urgency Level</div>
+        <div class="modal-info-value">${getUrgencyBadge(ticket.urgency || 'Low')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Department</div>
+        <div class="modal-info-value">🏫 ${escapeHtml(ticket.department || 'Not Assigned')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Location</div>
+        <div class="modal-info-value">📍 ${escapeHtml(ticket.location || 'Not Specified')}</div>
+      </div>
+
+      <div class="modal-info-item" style="grid-column: 1 / -1;">
+        <div class="modal-info-label">Date Submitted</div>
+        <div class="modal-info-value" style="font-weight: 500; color: var(--text-muted);">${formatDate(ticket.created_at)}</div>
+      </div>
+    </div>
+
+    <div class="modal-problem-box">
+      <h4>Full Complaint Description</h4>
+      <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
+    </div>
+  `;
+
+  overlay.classList.add('visible');
+}
+
+function closeHomeModal() {
+  const overlay = document.getElementById('home-modal-overlay');
+  if (overlay) overlay.classList.remove('visible');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* ── Boot ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   initComplaintForm();
   loadHomeStats();
+  fetchAndRenderHomeComplaints();
+
+  /* Show More Button */
+  const showMoreBtn = document.getElementById('show-more-btn');
+  if (showMoreBtn) {
+    showMoreBtn.addEventListener('click', () => {
+      homeDisplayLimit += 5;
+      renderHomeComplaints();
+    });
+  }
+
+  /* Modal Close Listeners */
+  const closeBtn = document.getElementById('home-modal-close-btn');
+  const closeActionBtn = document.getElementById('home-modal-close-action');
+  const overlay = document.getElementById('home-modal-overlay');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeHomeModal);
+  if (closeActionBtn) closeActionBtn.addEventListener('click', closeHomeModal);
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeHomeModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeHomeModal();
+  });
 });
