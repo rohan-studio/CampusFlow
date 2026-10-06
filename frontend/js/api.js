@@ -3,9 +3,19 @@
  * Handles all communication with the backend REST API.
  */
 
-const API_BASE = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
-  ? window.location.origin
-  : 'http://localhost:8000';
+// Live Render backend URL (used when hosted on Cloudflare Pages or outside localhost)
+const PRODUCTION_BACKEND_URL = 'https://campusflow-backend.onrender.com';
+
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.protocol === 'file:' ||
+  !window.location.hostname
+);
+
+const API_BASE = isLocal
+  ? (window.location.port === '8000' ? window.location.origin : 'http://127.0.0.1:8000')
+  : (window.CAMPUSFLOW_API_URL || PRODUCTION_BACKEND_URL);
 
 /**
  * Submit a new complaint.
