@@ -117,7 +117,7 @@ def find_department(category):
 
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD", "OPTIONS"])
 def health():
     return {"message": "CampusFlow AI is running"}
 
@@ -186,11 +186,11 @@ def get_ticket(ticket_id: str):
 # Cloudflare Pages frontend URL (configurable via environment variable)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://campusflow.pages.dev")
 
-@app.get("/", include_in_schema=False)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def redirect_root():
     return RedirectResponse(url=FRONTEND_URL, status_code=307)
 
-@app.get("/{full_path:path}", include_in_schema=False)
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 def redirect_to_frontend(full_path: str):
     # Exclude internal FastAPI paths like docs and openapi
     if full_path in ["docs", "redoc", "openapi.json"]:
