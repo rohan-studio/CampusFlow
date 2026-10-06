@@ -28,6 +28,7 @@ def create_ticket_sqlalchemy(analysis, department):
             db_ticket.ticket_id = ticket_id
     
             session.commit()
+            session.refresh(db_ticket)
 
             result_ticket = ticket_to_dict(db_ticket)
         except Exception:
@@ -87,6 +88,7 @@ def ticket_to_dict(ticket):
     return {
         "id": ticket.id,
         "ticket_id": ticket.ticket_id,
+        "created_at": ticket.created_at.isoformat() if hasattr(ticket, "created_at") and ticket.created_at and hasattr(ticket.created_at, "isoformat") else (str(getattr(ticket, "created_at", None)) if getattr(ticket, "created_at", None) else None),
         "status": ticket.status,
         "department": ticket.department,
         "category": ticket.category,
