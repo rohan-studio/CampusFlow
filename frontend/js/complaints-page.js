@@ -72,6 +72,13 @@ async function fetchComplaints() {
 
   try {
     allTickets = await getAllTickets();
+    allTickets.sort((a, b) => {
+      if (a.created_at && b.created_at) {
+        const timeDiff = new Date(b.created_at) - new Date(a.created_at);
+        if (timeDiff !== 0) return timeDiff;
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
     updateStats();
     renderComplaints();
   } catch (err) {

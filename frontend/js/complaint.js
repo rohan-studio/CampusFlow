@@ -276,6 +276,13 @@ async function fetchAndRenderHomeComplaints() {
 
   try {
     allHomeTickets = await getAllTickets();
+    allHomeTickets.sort((a, b) => {
+      if (a.created_at && b.created_at) {
+        const timeDiff = new Date(b.created_at) - new Date(a.created_at);
+        if (timeDiff !== 0) return timeDiff;
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
     renderHomeComplaints();
   } catch (err) {
     console.error('Failed to load recent complaints:', err);

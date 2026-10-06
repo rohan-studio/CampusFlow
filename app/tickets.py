@@ -57,7 +57,7 @@ def get_ticket_sqlalchemy(ticket_id):
 
 def get_all_tickets_sqlalchemy():
     with SessionLocal() as session:
-        statement = select(Ticket)
+        statement = select(Ticket).order_by(Ticket.id.desc())
         tickets = session.scalars(statement).all()
 
         result = []
