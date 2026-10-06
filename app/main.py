@@ -3,7 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 
@@ -183,6 +183,17 @@ def get_ticket(ticket_id: str):
     return ticket
 
 
-# Serve frontend static assets (index.html at root, css, js, admin pages)
-frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+# Cloudflare Pages frontend URL (configurable via environment variable)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://campusflow.pages.dev")
+
+@app.get("/", include_in_schema=False)
+def redirect_root():
+    return RedirectResponse(url=FRONTEND_URL, status_code=307)
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def redirect_to_frontend(full_path: str):
+    # Exclude internal FastAPI paths like docs and openapi
+    if full_path in ["docs", "redoc", "openapi.json"]:
+        raise HTTPException(status_code=404)
+    target = f"{FRONTEND_URL.rstrip('/')}/{full_path}" if full_path else FRONTEND_URL
+    return RedirectResponse(url=target, status_code=307)
