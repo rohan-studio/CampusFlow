@@ -88,7 +88,7 @@ def ticket_to_dict(ticket):
     return {
         "id": ticket.id,
         "ticket_id": ticket.ticket_id,
-        "created_at": ticket.created_at.isoformat() if hasattr(ticket, "created_at") and ticket.created_at and hasattr(ticket.created_at, "isoformat") else (str(getattr(ticket, "created_at", None)) if getattr(ticket, "created_at", None) else None),
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
         "status": ticket.status,
         "department": ticket.department,
         "category": ticket.category,
