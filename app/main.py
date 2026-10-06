@@ -3,6 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 
@@ -116,8 +117,8 @@ def find_department(category):
 
 
 
-@app.get("/")
-def home():
+@app.get("/health")
+def health():
     return {"message": "CampusFlow AI is running"}
 
 
@@ -180,3 +181,9 @@ def get_ticket(ticket_id: str):
         )
     
     return ticket
+    
+
+# Mount frontend directory to serve index.html and static assets directly at /
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
