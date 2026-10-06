@@ -257,16 +257,19 @@ function renderTickets() {
 function buildTicketCard(ticket) {
   const isResolved = ticket.status?.toLowerCase() === 'resolved';
   const urgencyKey = ticket.urgency || 'Low';
-  const shortDesc  = ticket.description
-    ? ticket.description.slice(0, 160) + (ticket.description.length > 160 ? '…' : '')
+  const rawDesc    = ticket.problem || ticket.description || '';
+  const shortDesc  = rawDesc
+    ? rawDesc.slice(0, 160) + (rawDesc.length > 160 ? '…' : '')
     : 'No description provided.';
+  const displayId  = ticket.ticket_id || `#${ticket.id}`;
+  const resolveTargetId = ticket.ticket_id || ticket.id;
 
   return `
     <div class="ticket-card urgency-${urgencyKey.toLowerCase()} ${isResolved ? 'resolved' : ''}"
-         id="ticket-${ticket.id}">
+         id="ticket-${resolveTargetId}">
       <div>
         <div class="ticket-meta">
-          <span class="ticket-id">#${ticket.id}</span>
+          <span class="ticket-id">${displayId}</span>
           ${urgencyBadge(urgencyKey)}
           ${statusBadge(ticket.status)}
           <span class="ticket-date">${formatDate(ticket.created_at)}</span>
@@ -279,6 +282,10 @@ function buildTicketCard(ticket) {
           <span class="badge badge-accent" style="margin-left:4px;">
             ${ticket.category || 'General'}
           </span>
+          ${ticket.location ? `
+          <span class="badge" style="margin-left:4px; background: rgba(0,0,0,0.06); color: var(--text-muted);">
+            📍 ${escapeHtml(ticket.location)}
+          </span>` : ''}
         </div>
       </div>
 
@@ -286,7 +293,7 @@ function buildTicketCard(ticket) {
         ${!isResolved ? `
           <button
             class="btn btn-success btn-sm"
-            data-resolve-id="${ticket.id}"
+            data-resolve-id="${resolveTargetId}"
             title="Mark as Resolved"
           >✔ Resolve</button>
         ` : `
@@ -306,12 +313,14 @@ async function handleResolve(ticketId, btn) {
     await resolveTicket(ticketId);
 
     /* Update local state */
-    const idx = allTickets.findIndex(t => String(t.id) === String(ticketId));
+    const idx = allTickets.findIndex(t =>
+      String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
+    );
     if (idx !== -1) allTickets[idx].status = 'Resolved';
 
     updateDashStats();
     renderTickets();
-    showToast(`Ticket #${ticketId} resolved successfully!`, 'success');
+    showToast(`Ticket ${ticketId} resolved successfully!`, 'success');
   } catch (err) {
     console.error('Resolve error:', err);
     btn.disabled  = false;

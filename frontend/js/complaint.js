@@ -71,7 +71,8 @@ function displayResult(ticket) {
 
   const urgencyBadge = getUrgencyBadge(ticket.urgency);
   const statusBadge  = getStatusBadge(ticket.status);
-  const date         = formatDate(ticket.created_at);
+  const date         = formatDate(ticket.created_at || new Date().toISOString());
+  const displayId    = ticket.ticket_id || (ticket.id ? `#${ticket.id}` : 'N/A');
 
   resultArea.innerHTML = `
     <div class="result-card">
@@ -87,7 +88,7 @@ function displayResult(ticket) {
         <div class="result-field" style="grid-column: 1 / -1;">
           <div class="result-field-label">Ticket ID</div>
           <div class="result-field-value">
-            <span class="ticket-id-badge">#${ticket.id || 'N/A'}</span>
+            <span class="ticket-id-badge">${displayId}</span>
           </div>
         </div>
 
@@ -102,6 +103,11 @@ function displayResult(ticket) {
         </div>
 
         <div class="result-field">
+          <div class="result-field-label">Location</div>
+          <div class="result-field-value">${ticket.location || '—'}</div>
+        </div>
+
+        <div class="result-field">
           <div class="result-field-label">Urgency Level</div>
           <div class="result-field-value">${urgencyBadge}</div>
         </div>
@@ -111,10 +117,16 @@ function displayResult(ticket) {
           <div class="result-field-value">${statusBadge}</div>
         </div>
 
-        <div class="result-field" style="grid-column: 1 / -1;">
+        <div class="result-field">
           <div class="result-field-label">Submitted On</div>
           <div class="result-field-value" style="font-weight: 500; color: var(--text-muted);">${date}</div>
         </div>
+
+        ${ticket.problem || ticket.description ? `
+        <div class="result-field" style="grid-column: 1 / -1;">
+          <div class="result-field-label">Identified Problem</div>
+          <div class="result-field-value">${ticket.problem || ticket.description}</div>
+        </div>` : ''}
       </div>
 
       <p style="margin-top: 16px; font-size: .82rem; color: var(--text-muted); line-height: 1.6;">
@@ -197,6 +209,9 @@ function initComplaintForm() {
       const charCount = document.getElementById('char-count');
       if (charCount) charCount.textContent = '0';
 
+      /* Refresh home stats */
+      loadHomeStats();
+
     } catch (err) {
       console.error('Complaint submission error:', err);
       showToast(err.message || 'Failed to submit complaint. Please try again.', 'error', 6000);
@@ -207,5 +222,35 @@ function initComplaintForm() {
   });
 }
 
+/* ── Home Page Live Stats ─────────────────────────────────── */
+async function loadHomeStats() {
+  const resolvedEl = document.getElementById('home-stat-resolved');
+  const pendingEl  = document.getElementById('home-stat-pending');
+  const deptsEl    = document.getElementById('home-stat-depts');
+  const satEl      = document.getElementById('home-stat-satisfaction');
+
+  if (!resolvedEl && !pendingEl) return;
+
+  try {
+    const tickets = await getAllTickets();
+    const resolved = tickets.filter(t => t.status?.toLowerCase() === 'resolved').length;
+    const pending  = tickets.filter(t => t.status?.toLowerCase() !== 'resolved').length;
+    const depts    = new Set(tickets.map(t => t.department).filter(Boolean)).size;
+
+    if (resolvedEl) resolvedEl.textContent = resolved;
+    if (pendingEl)  pendingEl.textContent  = pending;
+    if (deptsEl)    deptsEl.textContent    = depts || 0;
+    if (satEl && tickets.length > 0) {
+      const rate = Math.round((resolved / tickets.length) * 100);
+      satEl.textContent = `${rate}%`;
+    }
+  } catch {
+    // If backend is offline or starting up, keep default numbers
+  }
+}
+
 /* ── Boot ─────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', initComplaintForm);
+document.addEventListener('DOMContentLoaded', () => {
+  initComplaintForm();
+  loadHomeStats();
+});
