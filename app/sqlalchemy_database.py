@@ -8,10 +8,13 @@ from .models import Base, Ticket
 
 
 load_dotenv()
-
 db_url = os.getenv("DATABASE_URL")
 
-engine = create_engine(db_url)
+engine = create_engine(
+    db_url,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 SessionLocal = sessionmaker(bind=engine)
 
 with SessionLocal() as session:
