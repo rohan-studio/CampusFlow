@@ -4,7 +4,7 @@
  */
 
 // Live Render backend URL (used when hosted on Cloudflare Pages or outside localhost)
-const PRODUCTION_BACKEND_URL = 'https://campusflow-backend.onrender.com';
+const PRODUCTION_BACKEND_URL = 'https://campusflow-imnt.onrender.com';
 
 const isLocal = typeof window !== 'undefined' && (
   window.location.hostname === 'localhost' ||
