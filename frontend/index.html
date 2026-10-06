@@ -18,6 +18,7 @@
     <div class="navbar-nav">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#submit" class="nav-link">Submit Complaint</a>
+      <a href="#complaints" class="nav-link">All Complaints</a>
       <a href="admin-login.html" class="btn-nav-admin">Admin Portal 🔐</a>
     </div>
   </nav>
@@ -47,23 +48,23 @@
   <!-- ══ Stats Bar ════════════════════════════════════════════ -->
   <div class="stats-bar">
     <div class="stat-item">
-      <div class="stat-number">0</div>
+      <div class="stat-number">{{ resolved_count }}</div>
       <div class="stat-label">✅ Resolved</div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-number">0</div>
+      <div class="stat-number">{{ pending_count }}</div>
       <div class="stat-label">⏳ Pending</div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-number">0</div>
+      <div class="stat-number">{{ dept_count }}</div>
       <div class="stat-label">🏫 Departments</div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-number">0%</div>
-      <div class="stat-label">😊 Satisfaction</div>
+      <div class="stat-number">{{ satisfaction }}%</div>
+      <div class="stat-label">⚡ Resolution Rate</div>
     </div>
   </div>
 
@@ -164,6 +165,70 @@
     </div>
   </section>
 
+  <!-- ══ All Complaints Cards Section ════════════════════════ -->
+  <section class="section" id="complaints" style="background: var(--bg); padding: 80px 5vw 100px;">
+    <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+      <span class="eyebrow">Real-Time Tracker</span>
+      <h2>📋 All Campus Complaints</h2>
+      <p>Browse campus complaints in real time. Click any card to view full details.</p>
+    </div>
+
+    <div style="max-width: 960px; margin: 0 auto;">
+      <div class="tickets-grid" id="public-tickets-grid">
+        {% if tickets %}
+          {% for ticket in tickets %}
+          <div class="ticket-card clickable urgency-{{ (ticket.urgency or 'medium').lower().split()[0] }} {% if (ticket.status or '').lower() == 'resolved' %}resolved{% endif %}"
+               data-ticket='{{ ticket | tojson }}'
+               onclick="openTicketDetails(JSON.parse(this.dataset.ticket))"
+               style="cursor: pointer;">
+            <div>
+              <div class="ticket-meta">
+                <span class="ticket-id">#{{ ticket.ticket_id or ticket.id }}</span>
+                <span class="badge {% if (ticket.status or '').lower() == 'resolved' %}badge-resolved{% else %}badge-pending{% endif %}">
+                  {% if (ticket.status or '').lower() == 'resolved' %}✅{% else %}⏳{% endif %} {{ ticket.status or 'Pending' }}
+                </span>
+                <span class="badge badge-accent">
+                  🏫 {{ ticket.department or 'General' }}
+                </span>
+                {% if ticket.urgency %}
+                <span class="badge {% if 'high' in ticket.urgency.lower() %}badge-high{% elif 'medium' in ticket.urgency.lower() %}badge-medium{% else %}badge-low{% endif %}">
+                  ⚡ {{ ticket.urgency }}
+                </span>
+                {% endif %}
+              </div>
+              <p class="ticket-description" style="font-weight: 500; margin: 8px 0 12px; font-size: .95rem;">
+                {{ ticket.problem or ticket.description or 'No description provided.' }}
+              </p>
+              <div class="ticket-footer" style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size: .82rem; color: var(--text-muted);">
+                  📍 <strong>Location:</strong> {{ ticket.location or 'Campus' }} • 🏷️ <strong>Category:</strong> {{ ticket.category or 'General' }}
+                </span>
+                <span style="font-size: .82rem; color: var(--accent); font-weight: 600;">
+                  Click for details ➔
+                </span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <span class="empty-icon">🎉</span>
+            <h3>No Complaints Found</h3>
+            <p>All complaints are resolved or none have been submitted yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Complaint Detail Modal ════════════════════════════════ -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal" style="max-width: 560px; position: relative;">
+      <button onclick="closeTicketModal()" style="position: absolute; top: 16px; right: 18px; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; border: none; background: none; line-height: 1;" aria-label="Close">✕</button>
+      <div id="modal-details-content"></div>
+    </div>
+  </div>
+
   <!-- ══ Footer ══════════════════════════════════════════════ -->
   <footer class="footer">
     <p>
@@ -178,5 +243,84 @@
   <!-- ══ Scripts ═════════════════════════════════════════════ -->
   <script src="js/api.js"></script>
   <script src="js/complaint.js"></script>
+  <script>
+    function openTicketDetails(ticket) {
+      const modal = document.getElementById('ticket-modal');
+      const content = document.getElementById('modal-details-content');
+      if (!modal || !content) return;
+
+      const isResolved = (ticket.status || '').toLowerCase() === 'resolved';
+      const statusBadge = `<span class="badge ${isResolved ? 'badge-resolved' : 'badge-pending'}">${isResolved ? '✅' : '⏳'} ${ticket.status || 'Pending'}</span>`;
+      const urgencyKey = (ticket.urgency || 'Normal').toLowerCase();
+      let urgencyBadgeClass = 'badge-accent';
+      if (urgencyKey.includes('high')) urgencyBadgeClass = 'badge-high';
+      else if (urgencyKey.includes('medium')) urgencyBadgeClass = 'badge-medium';
+      else if (urgencyKey.includes('low')) urgencyBadgeClass = 'badge-low';
+      const urgencyBadge = `<span class="badge ${urgencyBadgeClass}">⚡ ${ticket.urgency || 'Normal'}</span>`;
+
+      content.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+          <span class="ticket-id" style="font-size: 1rem; padding: 4px 12px;">#${ticket.ticket_id || ticket.id}</span>
+          ${statusBadge}
+          ${urgencyBadge}
+        </div>
+
+        <h3 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 14px; font-weight: 700;">
+          Complaint Details
+        </h3>
+
+        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: .75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            Problem Description
+          </div>
+          <p style="font-size: .95rem; color: var(--text); line-height: 1.6; margin: 0;">
+            ${ticket.problem || ticket.description || 'No description provided.'}
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="result-field">
+            <div class="result-field-label">Department</div>
+            <div class="result-field-value">🏫 ${ticket.department || 'General Administration'}</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Category</div>
+            <div class="result-field-value">🏷️ ${ticket.category || 'General'}</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Location</div>
+            <div class="result-field-value">📍 ${ticket.location || 'Campus'}</div>
+          </div>
+          <div class="result-field">
+            <div class="result-field-label">Status</div>
+            <div class="result-field-value">${ticket.status || 'Pending'}</div>
+          </div>
+        </div>
+
+        <button onclick="closeTicketModal()" class="btn btn-primary btn-full" style="margin-top: 24px;">
+          Close Details
+        </button>
+      `;
+
+      modal.classList.add('visible');
+    }
+
+    function closeTicketModal() {
+      const modal = document.getElementById('ticket-modal');
+      if (modal) modal.classList.remove('visible');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('ticket-modal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeTicketModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTicketModal();
+      });
+    });
+  </script>
 </body>
 </html>

@@ -192,6 +192,42 @@ function initComplaintForm() {
       displayResult(ticket);
       showToast('Complaint submitted successfully!', 'success');
 
+      /* Insert new ticket into live feed */
+      const feed = document.getElementById('public-tickets-grid');
+      if (feed) {
+        const emptyState = feed.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
+
+        const card = document.createElement('div');
+        const urgencyKey = (ticket.urgency || 'medium').toLowerCase().split(' ')[0];
+        card.className = `ticket-card clickable urgency-${urgencyKey}`;
+        card.style.cursor = 'pointer';
+        card.onclick = () => {
+          if (typeof openTicketDetails === 'function') openTicketDetails(ticket);
+        };
+        card.innerHTML = `
+          <div>
+            <div class="ticket-meta">
+              <span class="ticket-id">#${ticket.ticket_id || ticket.id}</span>
+              <span class="badge badge-pending">⏳ ${ticket.status || 'Pending'}</span>
+              <span class="badge badge-accent">🏫 ${ticket.department || 'General'}</span>
+            </div>
+            <p class="ticket-description" style="font-weight: 500; margin: 8px 0 12px; font-size: .95rem;">
+              ${ticket.problem || ticket.description || complaintText}
+            </p>
+            <div class="ticket-footer" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size: .82rem; color: var(--text-muted);">
+                📍 <strong>Location:</strong> ${ticket.location || 'Campus'} • 🏷️ <strong>Category:</strong> ${ticket.category || 'General'}
+              </span>
+              <span style="font-size: .82rem; color: var(--accent); font-weight: 600;">
+                Click for details ➔
+              </span>
+            </div>
+          </div>
+        `;
+        feed.prepend(card);
+      }
+
       /* Reset form */
       form.reset();
       const charCount = document.getElementById('char-count');

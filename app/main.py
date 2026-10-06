@@ -1,9 +1,10 @@
 import os
 from google import genai
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 
@@ -32,6 +33,17 @@ app.add_middleware(
 
 
 load_dotenv()
+
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+templates = Jinja2Templates(directory=frontend_dir)
+
+css_dir = os.path.join(frontend_dir, "css")
+js_dir = os.path.join(frontend_dir, "js")
+if os.path.exists(css_dir):
+    app.mount("/css", StaticFiles(directory=css_dir), name="css")
+if os.path.exists(js_dir):
+    app.mount("/js", StaticFiles(directory=js_dir), name="js")
+
 
 
 api_key = os.getenv("GEMINI_API_KEY")
@@ -117,9 +129,43 @@ def find_department(category):
 
 
 
+@app.get("/")
+def home(request: Request):
+    tickets = get_all_tickets_sqlalchemy()
+    total = len(tickets)
+    resolved = sum(1 for t in tickets if (t.get("status") or "").lower() == "resolved")
+    pending = total - resolved
+    departments = len(set(t.get("department") for t in tickets if t.get("department")))
+    satisfaction = round((resolved / total) * 100) if total > 0 else 100
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "tickets": tickets,
+            "total_count": total,
+            "resolved_count": resolved,
+            "pending_count": pending,
+            "dept_count": departments or 4,
+            "satisfaction": satisfaction,
+        }
+    )
+
+
+@app.get("/admin-login.html")
+def admin_login_page(request: Request):
+    return templates.TemplateResponse(request=request, name="admin-login.html", context={})
+
+
+@app.get("/admin-dashboard.html")
+def admin_dashboard_page(request: Request):
+    return templates.TemplateResponse(request=request, name="admin-dashboard.html", context={})
+
+
 @app.get("/health")
 def health():
     return {"message": "CampusFlow AI is running"}
+
 
 
 
@@ -180,10 +226,4 @@ def get_ticket(ticket_id: str):
             detail="Ticket not found"
         )
     
-    return ticket
-    
-
-# Mount frontend directory to serve index.html and static assets directly at /
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-if os.path.exists(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+    return ticket
