@@ -43,6 +43,15 @@ function formatDate(dateStr) {
   } catch { return dateStr; }
 }
 
+function normalizeUrgency(urgency) {
+  if (!urgency) return 'Low';
+  const u = String(urgency).toLowerCase().trim();
+  if (u.includes('high') || u.includes('urgent') || u.includes('critical')) return 'High';
+  if (u.includes('med')) return 'Medium';
+  if (u.includes('low')) return 'Low';
+  return 'Low';
+}
+
 const URGENCY_CONFIG = {
   High:   { badgeClass: 'badge-high',   icon: '🔴' },
   Medium: { badgeClass: 'badge-medium', icon: '🟡' },
@@ -50,15 +59,23 @@ const URGENCY_CONFIG = {
 };
 
 function urgencyBadge(urgency) {
-  const cfg = URGENCY_CONFIG[urgency] || { badgeClass: 'badge-accent', icon: '⚪' };
-  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${urgency || 'Unknown'}</span>`;
+  const norm = normalizeUrgency(urgency);
+  const cfg = URGENCY_CONFIG[norm] || { badgeClass: 'badge-low', icon: '🟢' };
+  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${norm}</span>`;
 }
 
 function statusBadge(status) {
-  const resolved = status?.toLowerCase() === 'resolved';
-  return `<span class="badge ${resolved ? 'badge-resolved' : 'badge-pending'}">
-    ${resolved ? '✅' : '⏳'} ${status || 'Pending'}
-  </span>`;
+  const s = String(status || 'Pending').trim();
+  const isResolved = s.toLowerCase() === 'resolved';
+  const isInProgress = s.toLowerCase().includes('progress');
+
+  if (isResolved) {
+    return `<span class="badge badge-resolved">✅ Resolved</span>`;
+  }
+  if (isInProgress) {
+    return `<span class="badge badge-inprogress">⚙️ In Progress</span>`;
+  }
+  return `<span class="badge badge-pending">⏳ Pending</span>`;
 }
 
 /* ─────────────────────────────────────────────────────────── */
@@ -241,7 +258,7 @@ function updateDashStats() {
   const total    = allTickets.length;
   const pending  = allTickets.filter(t => t.status?.toLowerCase() !== 'resolved').length;
   const resolved = allTickets.filter(t => t.status?.toLowerCase() === 'resolved').length;
-  const high     = allTickets.filter(t => t.urgency?.toLowerCase() === 'high').length;
+  const high     = allTickets.filter(t => normalizeUrgency(t.urgency) === 'High').length;
 
   setEl('stat-total',    total);
   setEl('stat-pending',  pending);
@@ -263,7 +280,7 @@ function getFilteredTickets() {
 
     const urgencyMatch =
       activeUrgencyFilter === 'all' ||
-      ticket.urgency?.toLowerCase() === activeUrgencyFilter.toLowerCase();
+      normalizeUrgency(ticket.urgency).toLowerCase() === activeUrgencyFilter.toLowerCase();
 
     return statusMatch && urgencyMatch;
   });
@@ -288,18 +305,11 @@ function renderTickets() {
   if (currentView === 'table') {
     container.innerHTML = buildTicketTable(filtered);
 
-    /* Row click & view button click -> open modal */
+    /* Row click -> open modal */
     container.querySelectorAll('.ticket-row').forEach(row => {
       row.addEventListener('click', (e) => {
         if (e.target.closest('[data-resolve-id]')) return; // ignore resolve button click
         openTicketModal(row.dataset.ticketId);
-      });
-    });
-
-    container.querySelectorAll('[data-view-id]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openTicketModal(btn.dataset.viewId);
       });
     });
 
@@ -348,7 +358,7 @@ function buildTicketTable(tickets) {
             <th>Location</th>
             <th>Urgency</th>
             <th>Status</th>
-            <th style="text-align: right;">Actions</th>
+            <th style="text-align: right; width: 100px;">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -365,21 +375,16 @@ function buildTicketTable(tickets) {
                 <td><span class="ticket-id-badge">${displayId}</span></td>
                 <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
-                <td><span style="font-weight: 500;">🏫 ${escapeHtml(t.department || '—')}</span></td>
+                <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
                 <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
                 <td>${urgencyBadge(urgencyKey)}</td>
                 <td>${statusBadge(t.status)}</td>
                 <td style="text-align: right;">
-                  <div class="table-actions" style="justify-content: flex-end;">
-                    <button class="btn-view-details" data-view-id="${targetId}" title="View details in popup">
-                      👁️ View
+                  ${!isResolved ? `
+                    <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved">
+                      ✔ Resolve
                     </button>
-                    ${!isResolved ? `
-                      <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved">
-                        ✔ Resolve
-                      </button>
-                    ` : ''}
-                  </div>
+                  ` : '<span class="badge badge-resolved" style="font-size: .7rem; padding: 2px 8px;">Resolved</span>'}
                 </td>
               </tr>
             `;
@@ -392,7 +397,7 @@ function buildTicketTable(tickets) {
 
 function buildTicketCard(ticket) {
   const isResolved = ticket.status?.toLowerCase() === 'resolved';
-  const urgencyKey = ticket.urgency || 'Low';
+  const urgencyKey = normalizeUrgency(ticket.urgency);
   const rawDesc    = ticket.problem || ticket.description || '';
   const shortDesc  = rawDesc
     ? rawDesc.slice(0, 160) + (rawDesc.length > 160 ? '…' : '')
@@ -429,9 +434,6 @@ function buildTicketCard(ticket) {
       </div>
 
       <div class="ticket-actions">
-        <button class="btn-view-details" data-view-id="${resolveTargetId}">
-          👁️ View Details
-        </button>
         ${!isResolved ? `
           <button
             class="btn btn-success btn-sm"

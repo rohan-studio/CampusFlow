@@ -32,23 +32,39 @@ function showToast(message, type = 'info', duration = 4000) {
   setTimeout(remove, duration);
 }
 
-/* ── Urgency Helpers ──────────────────────────────────────── */
-const URGENCY_CONFIG = {
-  High:   { class: 'badge-high',   icon: '🔴', label: 'High' },
-  Medium: { class: 'badge-medium', icon: '🟡', label: 'Medium' },
-  Low:    { class: 'badge-low',    icon: '🟢', label: 'Low' },
-};
+/* ── Urgency & Status Helpers ────────────────────────────── */
+function normalizeUrgency(urgency) {
+  if (!urgency) return 'Low';
+  const u = String(urgency).toLowerCase().trim();
+  if (u.includes('high') || u.includes('urgent') || u.includes('critical')) return 'High';
+  if (u.includes('med')) return 'Medium';
+  if (u.includes('low')) return 'Low';
+  return 'Low';
+}
 
 function getUrgencyBadge(urgency) {
-  const cfg = URGENCY_CONFIG[urgency] || { class: 'badge-accent', icon: '⚪', label: urgency };
+  const norm = normalizeUrgency(urgency);
+  const cfg = {
+    High:   { class: 'badge-high',   icon: '🔴', label: 'High' },
+    Medium: { class: 'badge-medium', icon: '🟡', label: 'Medium' },
+    Low:    { class: 'badge-low',    icon: '🟢', label: 'Low' },
+  }[norm] || { class: 'badge-low', icon: '🟢', label: 'Low' };
+
   return `<span class="badge ${cfg.class}">${cfg.icon} ${cfg.label}</span>`;
 }
 
 function getStatusBadge(status) {
-  const isResolved = status?.toLowerCase() === 'resolved';
-  return `<span class="badge ${isResolved ? 'badge-resolved' : 'badge-pending'}">
-    ${isResolved ? '✅' : '⏳'} ${status || 'Pending'}
-  </span>`;
+  const s = String(status || 'Pending').trim();
+  const isResolved = s.toLowerCase() === 'resolved';
+  const isInProgress = s.toLowerCase().includes('progress');
+
+  if (isResolved) {
+    return `<span class="badge badge-resolved">✅ Resolved</span>`;
+  }
+  if (isInProgress) {
+    return `<span class="badge badge-inprogress">⚙️ In Progress</span>`;
+  }
+  return `<span class="badge badge-pending">⏳ Pending</span>`;
 }
 
 /* ── Format Date ──────────────────────────────────────────── */
@@ -308,7 +324,6 @@ function renderHomeComplaints() {
             <th>Location</th>
             <th>Urgency</th>
             <th>Status</th>
-            <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -321,19 +336,14 @@ function renderHomeComplaints() {
             const targetId   = t.ticket_id || t.id;
 
             return `
-              <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click to view complete complaint details">
+              <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click row to view full details">
                 <td><span class="ticket-id-badge">${displayId}</span></td>
                 <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
-                <td><span style="font-weight: 500;">🏫 ${escapeHtml(t.department || '—')}</span></td>
+                <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
                 <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
                 <td>${getUrgencyBadge(urgencyKey)}</td>
                 <td>${getStatusBadge(t.status)}</td>
-                <td style="text-align: right;">
-                  <button class="btn-view-details" data-view-id="${targetId}">
-                    👁️ View
-                  </button>
-                </td>
               </tr>
             `;
           }).join('')}
@@ -345,13 +355,6 @@ function renderHomeComplaints() {
   /* Attach click listeners */
   container.querySelectorAll('.ticket-row').forEach(row => {
     row.addEventListener('click', () => openHomeModal(row.dataset.ticketId));
-  });
-
-  container.querySelectorAll('[data-view-id]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openHomeModal(btn.dataset.viewId);
-    });
   });
 
   /* Show More Button Visibility */

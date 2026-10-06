@@ -91,7 +91,7 @@ function updateStats() {
   const total    = allTickets.length;
   const pending  = allTickets.filter(t => t.status?.toLowerCase() !== 'resolved').length;
   const resolved = allTickets.filter(t => t.status?.toLowerCase() === 'resolved').length;
-  const high     = allTickets.filter(t => t.urgency?.toLowerCase() === 'high').length;
+  const high     = allTickets.filter(t => normalizeUrgency(t.urgency) === 'High').length;
 
   setEl('stat-total',    total);
   setEl('stat-pending',  pending);
@@ -116,7 +116,7 @@ function getFilteredComplaints() {
     /* Urgency Match */
     const urgencyMatch =
       activeUrgencyFilter === 'all' ||
-      t.urgency?.toLowerCase() === activeUrgencyFilter.toLowerCase();
+      normalizeUrgency(t.urgency).toLowerCase() === activeUrgencyFilter.toLowerCase();
 
     /* Search Match */
     const searchMatch = !searchQuery || [
@@ -161,7 +161,6 @@ function renderComplaints() {
             <th>Location</th>
             <th>Urgency</th>
             <th>Status</th>
-            <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -178,15 +177,10 @@ function renderComplaints() {
                 <td><span class="ticket-id-badge">${displayId}</span></td>
                 <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
-                <td><span style="font-weight: 500;">🏫 ${escapeHtml(t.department || '—')}</span></td>
+                <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
                 <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
                 <td>${urgencyBadge(urgencyKey)}</td>
                 <td>${statusBadge(t.status)}</td>
-                <td style="text-align: right;">
-                  <button class="btn-view-details" data-view-id="${targetId}">
-                    👁️ View Details
-                  </button>
-                </td>
               </tr>
             `;
           }).join('')}
@@ -198,13 +192,6 @@ function renderComplaints() {
   /* Attach listeners */
   container.querySelectorAll('.ticket-row').forEach(row => {
     row.addEventListener('click', () => openModal(row.dataset.ticketId));
-  });
-
-  container.querySelectorAll('[data-view-id]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openModal(btn.dataset.viewId);
-    });
   });
 }
 
@@ -271,6 +258,15 @@ function closeModal() {
 }
 
 /* ── Badges & Formatting ──────────────────────────────────── */
+function normalizeUrgency(urgency) {
+  if (!urgency) return 'Low';
+  const u = String(urgency).toLowerCase().trim();
+  if (u.includes('high') || u.includes('urgent') || u.includes('critical')) return 'High';
+  if (u.includes('med')) return 'Medium';
+  if (u.includes('low')) return 'Low';
+  return 'Low';
+}
+
 const URGENCY_CONFIG = {
   High:   { badgeClass: 'badge-high',   icon: '🔴' },
   Medium: { badgeClass: 'badge-medium', icon: '🟡' },
@@ -278,15 +274,23 @@ const URGENCY_CONFIG = {
 };
 
 function urgencyBadge(urgency) {
-  const cfg = URGENCY_CONFIG[urgency] || { badgeClass: 'badge-accent', icon: '⚪' };
-  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${urgency || 'Low'}</span>`;
+  const norm = normalizeUrgency(urgency);
+  const cfg = URGENCY_CONFIG[norm] || { badgeClass: 'badge-low', icon: '🟢' };
+  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${norm}</span>`;
 }
 
 function statusBadge(status) {
-  const resolved = status?.toLowerCase() === 'resolved';
-  return `<span class="badge ${resolved ? 'badge-resolved' : 'badge-pending'}">
-    ${resolved ? '✅' : '⏳'} ${status || 'Pending'}
-  </span>`;
+  const s = String(status || 'Pending').trim();
+  const isResolved = s.toLowerCase() === 'resolved';
+  const isInProgress = s.toLowerCase().includes('progress');
+
+  if (isResolved) {
+    return `<span class="badge badge-resolved">✅ Resolved</span>`;
+  }
+  if (isInProgress) {
+    return `<span class="badge badge-inprogress">⚙️ In Progress</span>`;
+  }
+  return `<span class="badge badge-pending">⏳ Pending</span>`;
 }
 
 function formatDate(dateStr) {
