@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — CampusFlow</title>
+  <meta name="description" content="CampusFlow admin dashboard — manage and resolve campus complaints." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══ Dashboard Layout ════════════════════════════════════ -->
+  <div class="dashboard-layout">
+
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="dashboard-brand">
+        <div class="brand-icon">🎓</div>
+        CampusFlow
+        <span style="
+          font-size:.7rem; font-weight:600; background:rgba(255,255,255,.15);
+          border-radius:999px; padding:2px 10px; margin-left:6px; letter-spacing:.5px;
+        ">ADMIN</span>
+      </div>
+
+      <div class="dashboard-header-actions">
+        <span class="admin-info">
+          👤 <span id="admin-name">Admin</span>
+        </span>
+        <button class="btn-logout" id="logout-btn" title="Sign out">
+          🚪 Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+
+      <!-- Title Row -->
+      <div class="dashboard-title-row">
+        <div>
+          <h1>📋 Complaint Dashboard</h1>
+          <p>Review, filter, and resolve student complaints.</p>
+        </div>
+        <button class="btn btn-secondary" id="refresh-btn" style="gap:6px;">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <!-- Dashboard Stats -->
+      <div class="dash-stats">
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">Total Tickets</div>
+          <div class="dash-stat-value total" id="stat-total">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">⏳ Pending</div>
+          <div class="dash-stat-value pending" id="stat-pending">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">✅ Resolved</div>
+          <div class="dash-stat-value resolved" id="stat-resolved">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-label">🔴 High Urgency</div>
+          <div class="dash-stat-value high" id="stat-high">—</div>
+        </div>
+      </div>
+
+      <!-- Filter Row -->
+      <div class="filter-row">
+        <span class="filter-group-label">Status:</span>
+        <button class="filter-btn active" data-status-filter="all">All</button>
+        <button class="filter-btn" data-status-filter="pending">⏳ Pending</button>
+        <button class="filter-btn" data-status-filter="resolved">✅ Resolved</button>
+
+        <div class="filter-divider"></div>
+
+        <span class="filter-group-label">Urgency:</span>
+        <button class="filter-btn active" data-urgency-filter="all">All</button>
+        <button class="filter-btn" data-urgency-filter="High">🔴 High</button>
+        <button class="filter-btn" data-urgency-filter="Medium">🟡 Medium</button>
+        <button class="filter-btn" data-urgency-filter="Low">🟢 Low</button>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="spinner-wrap" id="spinner" style="display:none;">
+        <div class="spinner"></div>
+        <span>Loading tickets…</span>
+      </div>
+
+      <!-- Tickets Grid -->
+      <div class="tickets-grid" id="tickets-grid">
+        <!-- Rendered by admin.js -->
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <h3>Loading tickets…</h3>
+          <p>Please wait while we fetch complaints.</p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>© 2025 <strong>CampusFlow</strong> Admin Portal — Authorized use only.</p>
+    </footer>
+
+  </div>
+
+  <!-- ══ Scripts ═════════════════════════════════════════════ -->
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

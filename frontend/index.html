@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusFlow — Campus Complaint Management</title>
+  <meta name="description" content="Submit and track campus complaints quickly and easily with CampusFlow." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══ Navbar ══════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <div class="brand-icon">🎓</div>
+      CampusFlow
+    </a>
+    <div class="navbar-nav">
+      <a href="#how-it-works" class="nav-link">How It Works</a>
+      <a href="#submit" class="nav-link">Submit Complaint</a>
+      <a href="admin-login.html" class="btn-nav-admin">Admin Portal 🔐</a>
+    </div>
+  </nav>
+
+  <!-- ══ Hero ════════════════════════════════════════════════ -->
+  <section class="hero" id="home">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span>🎓</span> CampusFlow
+      </div>
+      <h1>
+        Your Voice,<br />
+        <span>Heard &amp; Resolved</span>
+      </h1>
+      <p>
+        Submit campus complaints in seconds. Our AI-powered system categorizes,
+        prioritizes, and routes your issue to the right department automatically.
+      </p>
+      <a href="#submit" class="btn btn-primary" style="font-size:1rem; padding: 14px 36px;">
+        📝 Submit a Complaint
+      </a>
+    </div>
+  </section>
+
+  <!-- ══ Stats Bar ════════════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-number">0</div>
+      <div class="stat-label">✅ Resolved</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-number">0</div>
+      <div class="stat-label">⏳ Pending</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-number">0</div>
+      <div class="stat-label">🏫 Departments</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-number">0%</div>
+      <div class="stat-label">😊 Satisfaction</div>
+    </div>
+  </div>
+
+  <!-- ══ How It Works ════════════════════════════════════════ -->
+  <section class="section" id="how-it-works" style="background: var(--bg); padding-top: 100px;">
+    <div class="section-header">
+      <span class="eyebrow">Simple Process</span>
+      <h2>How CampusFlow Works</h2>
+      <p>Three easy steps to get your campus issue resolved fast.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-number">1</span>
+        <div class="step-icon">📝</div>
+        <div class="step-title">Describe Your Issue</div>
+        <p class="step-desc">
+          Write about your campus problem in plain language — anything from
+          maintenance issues to academic concerns.
+        </p>
+      </div>
+      <div class="step-card">
+        <span class="step-number">2</span>
+        <div class="step-icon">✅</div>
+        <div class="step-title">Auto-Categorized by AI</div>
+        <p class="step-desc">
+          Our system instantly classifies your complaint, assigns urgency,
+          and routes it to the correct department.
+        </p>
+      </div>
+      <div class="step-card">
+        <span class="step-number">3</span>
+        <div class="step-icon">🔍</div>
+        <div class="step-title">Track &amp; Get Resolved</div>
+        <p class="step-desc">
+          Receive a unique ticket ID. Admin reviews and resolves your complaint
+          — you get notified every step of the way.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Complaint Form ═══════════════════════════════════════ -->
+  <section class="complaint-section" id="submit">
+    <div class="complaint-wrapper">
+      <div class="complaint-card">
+        <div class="complaint-card-header">
+          <h2>📝 Submit a Complaint</h2>
+          <p>Describe your issue and we'll take care of the rest.</p>
+        </div>
+        <div class="complaint-card-body">
+          <form id="complaint-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="complaint-text">
+                Describe Your Complaint <span class="required">*</span>
+              </label>
+              <textarea
+                id="complaint-text"
+                class="form-control"
+                placeholder="E.g. The projector in Room 301 has been broken for two weeks and no one has fixed it…"
+                maxlength="2000"
+                rows="6"
+              ></textarea>
+              <div class="form-hint">
+                <span id="char-count">0</span>/2000 characters — minimum 20 required
+              </div>
+              <div class="form-error" id="complaint-error">
+                Please describe your complaint (minimum 20 characters).
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" type="submit" id="submit-btn">
+              <span id="btn-text">Submit Complaint 🚀</span>
+            </button>
+          </form>
+
+          <!-- Result Display -->
+          <div class="result-area" id="result-area"></div>
+        </div>
+      </div>
+
+      <!-- Tips Card -->
+      <div style="
+        margin-top: 20px;
+        background: linear-gradient(135deg, #ede9fe, #e0f2fe);
+        border-radius: var(--radius-lg);
+        padding: 20px 24px;
+        border: 1px solid rgba(79,70,229,.15);
+      ">
+        <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+          💡 Tips for a Great Complaint
+        </div>
+        <ul style="font-size:.875rem; color: var(--text-muted); line-height:2; padding-left:16px; list-style:disc;">
+          <li>Be specific — mention the location, time, and people involved.</li>
+          <li>Describe the impact — how does it affect you or others?</li>
+          <li>Keep it factual and respectful for fastest resolution.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Footer ══════════════════════════════════════════════ -->
+  <footer class="footer">
+    <p>
+      © 2025 <strong>CampusFlow</strong> — Campus Complaint Management System.
+      Built with ❤️ for students.
+    </p>
+    <p style="margin-top:6px;">
+      <a href="admin-login.html">Admin Portal</a>
+    </p>
+  </footer>
+
+  <!-- ══ Scripts ═════════════════════════════════════════════ -->
+  <script src="js/api.js"></script>
+  <script src="js/complaint.js"></script>
+</body>
+</html>
