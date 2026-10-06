@@ -3,7 +3,9 @@
  * Handles all communication with the backend REST API.
  */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
+  ? window.location.origin
+  : 'http://localhost:8000';
 
 /**
  * Submit a new complaint.
