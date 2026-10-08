@@ -323,7 +323,14 @@ function statusBadge(status) {
 function formatDate(dateStr) {
   if (!dateStr) return 'Registered in system';
   try {
-    const d = new Date(dateStr);
+    let s = String(dateStr).trim();
+    if (s.includes(' ') && !s.includes('T')) {
+      s = s.replace(' ', 'T');
+    }
+    if (!s.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(s)) {
+      s += 'Z';
+    }
+    const d = new Date(s);
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleString('en-IN', {
       dateStyle: 'medium', timeStyle: 'short',

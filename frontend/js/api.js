@@ -79,10 +79,30 @@ async function submitComplaint(text, photo = null) {
     return {
       ...data.ticket,
       description: data.ticket.problem || text,
-      created_at: data.ticket.created_at || new Date().toISOString(),
+      created_at: normalizeTicketDate(data.ticket.created_at) || new Date().toISOString(),
     };
   }
   return data;
+}
+
+/**
+ * Normalize UTC ISO date strings from backend.
+ * Ensures naive UTC timestamps (e.g. "2026-10-08T21:00:28.112339")
+ * are correctly identified as UTC by appending 'Z', preventing
+ * timezone conversion errors in browsers.
+ * @param {string|null} dateStr
+ * @returns {string|null}
+ */
+function normalizeTicketDate(dateStr) {
+  if (!dateStr) return null;
+  let s = String(dateStr).trim();
+  if (s.includes(' ') && !s.includes('T')) {
+    s = s.replace(' ', 'T');
+  }
+  if (!s.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(s)) {
+    s += 'Z';
+  }
+  return s;
 }
 
 /**
@@ -108,7 +128,7 @@ async function getAllTickets() {
   return tickets.map(t => ({
     ...t,
     description: t.problem || t.description || 'No description provided.',
-    created_at: t.created_at || null,
+    created_at: normalizeTicketDate(t.created_at),
   }));
 }
 
@@ -132,7 +152,12 @@ async function getTicket(ticketId) {
     throw new Error(msg);
   }
 
-  return response.json();
+  const ticket = await response.json();
+  return {
+    ...ticket,
+    description: ticket.problem || ticket.description || 'No description provided.',
+    created_at: normalizeTicketDate(ticket.created_at),
+  };
 }
 
 /**

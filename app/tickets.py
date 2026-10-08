@@ -98,7 +98,7 @@ def ticket_to_dict(ticket):
     return {
         "id": ticket.id,
         "ticket_id": ticket.ticket_id,
-        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+        "created_at": (ticket.created_at.isoformat() + "Z") if ticket.created_at else None,
         "status": ticket.status,
         "department": ticket.department,
         "category": ticket.category,

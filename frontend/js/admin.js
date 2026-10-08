@@ -37,7 +37,16 @@ function showToast(message, type = 'info', duration = 4000) {
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleString('en-IN', {
+    let s = String(dateStr).trim();
+    if (s.includes(' ') && !s.includes('T')) {
+      s = s.replace(' ', 'T');
+    }
+    if (!s.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(s)) {
+      s += 'Z';
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('en-IN', {
       dateStyle: 'medium', timeStyle: 'short',
     });
   } catch { return dateStr; }
