@@ -1,7 +1,7 @@
 import os
 from google import genai
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -142,6 +142,17 @@ def create_complaint(complaint: ComplaintRequest):
     }
 
 
+
+@app.post("/test-photo")
+async def test_photo(photo: UploadFile = File(...)):
+    
+    return {
+        "filename": photo.filename,
+        "content_type": photo.content_type,
+    } 
+
+
+
 @app.get("/tickets")
 def get_tickets():
     
@@ -184,7 +195,7 @@ def get_ticket(ticket_id: str):
 
 
 # Cloudflare Pages frontend URL (configurable via environment variable)
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://campusflow.pages.dev")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://campusflow-a1o.pages.dev")
 
 @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def redirect_root():
@@ -196,4 +207,4 @@ def redirect_to_frontend(full_path: str):
     if full_path in ["docs", "redoc", "openapi.json"]:
         raise HTTPException(status_code=404)
     target = f"{FRONTEND_URL.rstrip('/')}/{full_path}" if full_path else FRONTEND_URL
-    return RedirectResponse(url=target, status_code=307)
+    return RedirectResponse(url=target, status_code=307)

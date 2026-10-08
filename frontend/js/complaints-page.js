@@ -254,6 +254,17 @@ function openModal(ticketId) {
       <h4>Full Complaint Description</h4>
       <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
     </div>
+
+    ${ticket.image_url ? `
+    <div style="margin-top:16px;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo</div>
+      <img
+        src="${ticket.image_url}"
+        alt="Complaint photo"
+        style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;"
+        loading="lazy"
+      />
+    </div>` : ''}
   `;
 
   overlay.classList.add('visible');

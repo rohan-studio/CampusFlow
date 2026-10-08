@@ -21,15 +21,24 @@ const API_BASE = isLocal
  * Submit a new complaint.
  * POST /complaint
  * @param {string} text - The complaint description text.
+ * @param {string|null} imageBase64 - Optional Base64 image string (from camera or gallery).
  * @returns {Promise<Object>} Ticket object
  */
-async function submitComplaint(text) {
+async function submitComplaint(text, imageBase64 = null) {
+  const payload = { message: text };
+
+  // Only include the image field if the user actually attached one
+  // The backend will read this and upload to Cloudinary if present
+  if (imageBase64) {
+    payload.image = imageBase64;
+  }
+
   const response = await fetch(`${API_BASE}/complaint`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ message: text }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

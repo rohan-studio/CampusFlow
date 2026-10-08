@@ -145,6 +145,17 @@ function displayResult(ticket) {
         </div>` : ''}
       </div>
 
+      ${ticket.image_url ? `
+      <div style="margin-top:16px;">
+        <div class="result-field-label" style="margin-bottom:8px;">📸 Attached Photo</div>
+        <img
+          src="${ticket.image_url}"
+          alt="Complaint photo"
+          style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;"
+          loading="lazy"
+        />
+      </div>` : ''}
+
       <p style="margin-top: 16px; font-size: .82rem; color: var(--text-muted); line-height: 1.6;">
         📧 Save your ticket ID for reference. Our team will review and address your complaint promptly.
       </p>
@@ -180,6 +191,108 @@ function validateForm(textarea) {
   return true;
 }
 
+/* ── Camera & Photo State ─────────────────────────────────── */
+let capturedPhotoBase64 = null;   // holds the Base64 string to send to backend
+let cameraStream        = null;   // holds the active MediaStream so we can stop it
+
+/* ── Camera Logic ─────────────────────────────────────────── */
+function initCameraFeature() {
+  const openCameraBtn   = document.getElementById('open-camera-btn');
+  const closeCameraBtn  = document.getElementById('close-camera-btn');
+  const captureBtn      = document.getElementById('capture-btn');
+  const removePhotoBtn  = document.getElementById('remove-photo-btn');
+  const fileInput       = document.getElementById('file-input');
+
+  if (!openCameraBtn) return;  // not on a page with the camera UI
+
+  /* — Open live camera — */
+  openCameraBtn.addEventListener('click', async () => {
+    try {
+      // Ask browser for permission to use the camera
+      // getUserMedia returns a Promise that resolves with a MediaStream
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },  // prefer rear camera on phones
+        audio: false
+      });
+
+      const video = document.getElementById('camera-video');
+      video.srcObject = cameraStream;  // feed the stream into the <video> element
+
+      document.getElementById('camera-stream-wrap').style.display = 'block';
+      document.getElementById('photo-preview-wrap').style.display  = 'none';
+    } catch (err) {
+      showToast('Camera access denied. Please allow camera permission or use gallery.', 'error', 5000);
+    }
+  });
+
+  /* — Cancel / close camera — */
+  closeCameraBtn.addEventListener('click', stopCamera);
+
+  /* — Capture a frame from the live video — */
+  captureBtn.addEventListener('click', () => {
+    const video  = document.getElementById('camera-video');
+    const canvas = document.getElementById('capture-canvas');
+
+    // Resize to max 800px wide to keep file size manageable
+    const MAX_WIDTH = 800;
+    const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
+    canvas.width  = video.videoWidth  * scale;
+    canvas.height = video.videoHeight * scale;
+
+    // Draw the current video frame onto the canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas → Base64 JPEG string
+    // This is the format Cloudinary understands: "data:image/jpeg;base64,..."
+    capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+    showPhotoPreview(capturedPhotoBase64);
+    stopCamera();
+  });
+
+  /* — Choose from gallery (file picker) — */
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // FileReader converts the file to a Base64 Data URL, same format as canvas
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      capturedPhotoBase64 = evt.target.result;
+      showPhotoPreview(capturedPhotoBase64);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* — Remove attached photo — */
+  removePhotoBtn.addEventListener('click', () => {
+    capturedPhotoBase64 = null;
+    document.getElementById('photo-preview-wrap').style.display = 'none';
+    removePhotoBtn.style.display = 'none';
+    fileInput.value = '';
+  });
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  document.getElementById('camera-stream-wrap').style.display = 'none';
+}
+
+function showPhotoPreview(base64) {
+  const img = document.getElementById('photo-preview-img');
+  const wrap = document.getElementById('photo-preview-wrap');
+  const removeBtn = document.getElementById('remove-photo-btn');
+
+  img.src = base64;
+  wrap.style.display = 'block';
+  if (removeBtn) removeBtn.style.display = 'inline-flex';
+  showToast('Photo attached! It will be uploaded with your complaint.', 'info', 3000);
+}
+
 /* ── Form Submit Handler ──────────────────────────────────── */
 function initComplaintForm() {
   const form      = document.getElementById('complaint-form');
@@ -209,21 +322,31 @@ function initComplaintForm() {
 
     /* Loading state */
     submitBtn.disabled = true;
-    if (btnText) btnText.innerHTML = '<span class="btn-spinner"></span> Submitting…';
+    if (btnText) {
+      btnText.innerHTML = capturedPhotoBase64
+        ? '<span class="btn-spinner"></span> Uploading photo & submitting…'
+        : '<span class="btn-spinner"></span> Submitting…';
+    }
 
     /* Hide previous result */
     const resultArea = document.getElementById('result-area');
     if (resultArea) resultArea.classList.remove('visible');
 
     try {
-      const ticket = await submitComplaint(complaintText);
+      // Pass the Base64 photo (or null if none) — api.js will include it in the request
+      const ticket = await submitComplaint(complaintText, capturedPhotoBase64);
       displayResult(ticket);
       showToast('Complaint submitted successfully!', 'success');
 
-      /* Reset form */
+      /* Reset form & photo state */
       form.reset();
+      capturedPhotoBase64 = null;
       const charCount = document.getElementById('char-count');
       if (charCount) charCount.textContent = '0';
+      const previewWrap = document.getElementById('photo-preview-wrap');
+      if (previewWrap) previewWrap.style.display = 'none';
+      const removeBtn = document.getElementById('remove-photo-btn');
+      if (removeBtn) removeBtn.style.display = 'none';
 
       /* Refresh home stats & complaints table */
       loadHomeStats();
@@ -234,7 +357,7 @@ function initComplaintForm() {
       showToast(err.message || 'Failed to submit complaint. Please try again.', 'error', 6000);
     } finally {
       submitBtn.disabled = false;
-      if (btnText) btnText.textContent = 'Submit Complaint';
+      if (btnText) btnText.textContent = 'Submit Complaint 🚀';
     }
   });
 }
@@ -426,6 +549,17 @@ function openHomeModal(ticketId) {
       <h4>Full Complaint Description</h4>
       <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
     </div>
+
+    ${ticket.image_url ? `
+    <div style="margin-top:16px;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo</div>
+      <img
+        src="${ticket.image_url}"
+        alt="Complaint photo"
+        style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;"
+        loading="lazy"
+      />
+    </div>` : ''}
   `;
 
   overlay.classList.add('visible');
@@ -449,6 +583,7 @@ function escapeHtml(str) {
 /* ── Boot ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   initComplaintForm();
+  initCameraFeature();
   loadHomeStats();
   fetchAndRenderHomeComplaints();
 
