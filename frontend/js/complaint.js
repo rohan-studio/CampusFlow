@@ -220,85 +220,31 @@ function validateForm(textarea) {
 
 /* ── Camera & Photo State ─────────────────────────────────── */
 let capturedPhotoBase64 = null;   // holds the Base64 string to send to backend
-let cameraStream        = null;   // holds the active MediaStream so we can stop it
 
 /* ── Camera Logic ─────────────────────────────────────────── */
 function initCameraFeature() {
   const cameraNativeInput = document.getElementById('camera-native-input');
   const fileInput         = document.getElementById('file-input');
-  const openWebcamBtn     = document.getElementById('open-webcam-btn');
-  const closeCameraBtn    = document.getElementById('close-camera-btn');
-  const captureBtn        = document.getElementById('capture-btn');
+  const openCameraLabel   = document.getElementById('open-camera-label');
   const removePhotoBtn    = document.getElementById('remove-photo-btn');
 
   if (!cameraNativeInput && !fileInput) return; // not on a page with camera UI
 
-  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Detect mobile and tablet devices
+  const isMobileOrTablet = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent)) // iPadOS
+    || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
-  // If on desktop and live webcam is supported, reveal the "Live Webcam" button
-  if (!isMobile && openWebcamBtn && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    openWebcamBtn.style.display = 'inline-flex';
-    openWebcamBtn.addEventListener('click', async () => {
-      let stream = null;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false
-        });
-      } catch {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        } catch (e) {
-          console.warn('Webcam stream failed:', e);
-        }
-      }
-
-      if (stream) {
-        cameraStream = stream;
-        const video = document.getElementById('camera-video');
-        if (video) {
-          video.muted = true;
-          video.srcObject = cameraStream;
-          try { await video.play(); } catch {}
-        }
-        document.getElementById('camera-stream-wrap').style.display = 'block';
-        document.getElementById('photo-preview-wrap').style.display  = 'none';
-        showToast('Live webcam ready! Click Capture to take photo.', 'info', 3000);
-      } else {
-        showToast('Live webcam could not be opened. You can use Open Camera or Choose from Gallery.', 'info', 4000);
-      }
-    });
+  // Show "Open Camera" on mobile and tablet only; hide for PC users
+  if (openCameraLabel) {
+    if (isMobileOrTablet) {
+      openCameraLabel.style.setProperty('display', 'inline-flex', 'important');
+    } else {
+      openCameraLabel.style.setProperty('display', 'none', 'important');
+    }
   }
 
-  /* — Cancel / close live camera — */
-  if (closeCameraBtn) closeCameraBtn.addEventListener('click', stopCamera);
-
-  /* — Capture a frame from the live video — */
-  if (captureBtn) {
-    captureBtn.addEventListener('click', () => {
-      const video  = document.getElementById('camera-video');
-      const canvas = document.getElementById('capture-canvas');
-
-      if (!video || !video.videoWidth) {
-        showToast('Camera stream is still starting. Please wait a moment.', 'error', 3000);
-        return;
-      }
-
-      const MAX_WIDTH = 1280;
-      const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
-      canvas.width  = video.videoWidth  * scale;
-      canvas.height = video.videoHeight * scale;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
-      showPhotoPreview(capturedPhotoBase64);
-      stopCamera();
-    });
-  }
-
-  /* — Process selected image file with auto-resize and compression — */
+  /* — Process selected image file with auto-resize and client compression — */
   function handleSelectedFile(file, inputEl) {
     if (!file) return;
 
@@ -318,7 +264,7 @@ function initCameraFeature() {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        // High-res smartphones shoot 12MP-48MP photos. Resize to max 1280px for fast upload.
+        // High-res smartphones shoot 12MP-48MP photos. Resize to max 1280px for instant upload.
         const MAX_DIM = 1280;
         let width = img.width;
         let height = img.height;
@@ -341,7 +287,6 @@ function initCameraFeature() {
 
         capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
         showPhotoPreview(capturedPhotoBase64);
-        stopCamera();
         if (inputEl) inputEl.value = '';
       };
 
@@ -349,7 +294,6 @@ function initCameraFeature() {
         // Fallback to original Base64 if canvas drawing fails
         capturedPhotoBase64 = e.target.result;
         showPhotoPreview(capturedPhotoBase64);
-        stopCamera();
         if (inputEl) inputEl.value = '';
       };
 
@@ -358,7 +302,7 @@ function initCameraFeature() {
     reader.readAsDataURL(file);
   }
 
-  /* — Native device camera input (fires when user takes photo on mobile) — */
+  /* — Native device camera input (fires when user takes photo on mobile / tablet) — */
   if (cameraNativeInput) {
     cameraNativeInput.addEventListener('change', (e) => {
       handleSelectedFile(e.target.files[0], cameraNativeInput);
@@ -376,7 +320,8 @@ function initCameraFeature() {
   if (removePhotoBtn) {
     removePhotoBtn.addEventListener('click', () => {
       capturedPhotoBase64 = null;
-      document.getElementById('photo-preview-wrap').style.display = 'none';
+      const previewWrap = document.getElementById('photo-preview-wrap');
+      if (previewWrap) previewWrap.style.display = 'none';
       removePhotoBtn.style.display = 'none';
       if (fileInput) fileInput.value = '';
       if (cameraNativeInput) cameraNativeInput.value = '';
@@ -384,22 +329,13 @@ function initCameraFeature() {
   }
 }
 
-function stopCamera() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-    cameraStream = null;
-  }
-  const streamWrap = document.getElementById('camera-stream-wrap');
-  if (streamWrap) streamWrap.style.display = 'none';
-}
-
 function showPhotoPreview(base64) {
   const img = document.getElementById('photo-preview-img');
   const wrap = document.getElementById('photo-preview-wrap');
   const removeBtn = document.getElementById('remove-photo-btn');
 
-  img.src = base64;
-  wrap.style.display = 'block';
+  if (img) img.src = base64;
+  if (wrap) wrap.style.display = 'block';
   if (removeBtn) removeBtn.style.display = 'inline-flex';
   showToast('Photo attached! It will be uploaded with your complaint.', 'info', 3000);
 }

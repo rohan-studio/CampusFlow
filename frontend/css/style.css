@@ -509,6 +509,23 @@ textarea.form-control { min-height: 140px; }
   pointer-events: none;
 }
 
+/* ── Mobile/Tablet Only Visibility (Camera button hidden on PC) ── */
+.mobile-tablet-only {
+  display: none !important;
+}
+
+@media (pointer: coarse) {
+  .mobile-tablet-only {
+    display: inline-flex !important;
+  }
+}
+
+@media (max-width: 1024px) and (hover: none) {
+  .mobile-tablet-only {
+    display: inline-flex !important;
+  }
+}
+
 .btn-danger {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
