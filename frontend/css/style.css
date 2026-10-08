@@ -93,6 +93,36 @@ input, textarea, select { font-family: inherit; }
   font-size: 1.1rem;
   color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.navbar-brand .brand-icon svg,
+.dashboard-brand .brand-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #ffffff;
+  display: block;
+}
+
+.auth-logo-icon svg {
+  width: 34px;
+  height: 34px;
+  stroke: #ffffff;
+  display: block;
+}
+
+.hero-badge .hero-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin-right: 2px;
+}
+
+.hero-badge .hero-badge-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
 }
 
 .navbar-nav {
