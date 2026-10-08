@@ -504,6 +504,11 @@ textarea.form-control { min-height: 140px; }
 }
 .btn-secondary:hover { background: #fff; border-color: var(--accent); color: var(--accent); }
 
+#open-camera-label *,
+#upload-file-label * {
+  pointer-events: none;
+}
+
 .btn-danger {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;

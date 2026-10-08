@@ -224,105 +224,81 @@ let cameraStream        = null;   // holds the active MediaStream so we can stop
 
 /* ── Camera Logic ─────────────────────────────────────────── */
 function initCameraFeature() {
-  const openCameraBtn     = document.getElementById('open-camera-btn');
+  const cameraNativeInput = document.getElementById('camera-native-input');
+  const fileInput         = document.getElementById('file-input');
+  const openWebcamBtn     = document.getElementById('open-webcam-btn');
   const closeCameraBtn    = document.getElementById('close-camera-btn');
   const captureBtn        = document.getElementById('capture-btn');
   const removePhotoBtn    = document.getElementById('remove-photo-btn');
-  const fileInput         = document.getElementById('file-input');
-  const cameraNativeInput = document.getElementById('camera-native-input');
 
-  if (!openCameraBtn) return; // not on a page with the camera UI
+  if (!cameraNativeInput && !fileInput) return; // not on a page with camera UI
 
   const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  /* — Open live camera / native camera — */
-  openCameraBtn.addEventListener('click', async () => {
-    // On mobile devices, directly open native camera app (avoids browser WebRTC permission errors)
-    if (isMobile && cameraNativeInput) {
-      cameraNativeInput.click();
-      return;
-    }
-
-    // On desktop/laptop, try to start live webcam feed
-    let stream = null;
-    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+  // If on desktop and live webcam is supported, reveal the "Live Webcam" button
+  if (!isMobile && openWebcamBtn && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    openWebcamBtn.style.display = 'inline-flex';
+    openWebcamBtn.addEventListener('click', async () => {
+      let stream = null;
       try {
-        // Try rear/environment if available, or any webcam
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
           audio: false
         });
-      } catch (err1) {
+      } catch {
         try {
-          // Fallback: request simple video without constraints (standard laptop webcam)
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
-        } catch (err2) {
-          console.warn('Live camera stream unavailable:', err2);
-          stream = null;
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        } catch (e) {
+          console.warn('Webcam stream failed:', e);
         }
       }
-    }
 
-    if (stream) {
-      cameraStream = stream;
-      const video = document.getElementById('camera-video');
-      if (video) {
-        video.muted = true;
-        video.srcObject = cameraStream;
-        try {
-          await video.play();
-        } catch (playErr) {
-          console.warn('Video play error:', playErr);
+      if (stream) {
+        cameraStream = stream;
+        const video = document.getElementById('camera-video');
+        if (video) {
+          video.muted = true;
+          video.srcObject = cameraStream;
+          try { await video.play(); } catch {}
         }
+        document.getElementById('camera-stream-wrap').style.display = 'block';
+        document.getElementById('photo-preview-wrap').style.display  = 'none';
+        showToast('Live webcam ready! Click Capture to take photo.', 'info', 3000);
+      } else {
+        showToast('Live webcam could not be opened. You can use Open Camera or Choose from Gallery.', 'info', 4000);
       }
-      document.getElementById('camera-stream-wrap').style.display = 'block';
-      document.getElementById('photo-preview-wrap').style.display  = 'none';
-      showToast('Live camera ready! Frame your shot and click Capture.', 'info', 3000);
-    } else {
-      // If WebRTC is blocked/unavailable, seamlessly fallback to device camera/photo picker!
-      if (cameraNativeInput) {
-        cameraNativeInput.click();
-      } else if (fileInput) {
-        fileInput.click();
-      }
-      showToast('Opening device camera / photo picker (Tip: allow camera in browser address bar for live webcam).', 'info', 4500);
-    }
-  });
+    });
+  }
 
   /* — Cancel / close live camera — */
-  closeCameraBtn.addEventListener('click', stopCamera);
+  if (closeCameraBtn) closeCameraBtn.addEventListener('click', stopCamera);
 
   /* — Capture a frame from the live video — */
-  captureBtn.addEventListener('click', () => {
-    const video  = document.getElementById('camera-video');
-    const canvas = document.getElementById('capture-canvas');
+  if (captureBtn) {
+    captureBtn.addEventListener('click', () => {
+      const video  = document.getElementById('camera-video');
+      const canvas = document.getElementById('capture-canvas');
 
-    if (!video || !video.videoWidth) {
-      showToast('Camera stream is still starting. Please wait a moment and try again.', 'error', 3000);
-      return;
-    }
+      if (!video || !video.videoWidth) {
+        showToast('Camera stream is still starting. Please wait a moment.', 'error', 3000);
+        return;
+      }
 
-    // Resize to max 800px wide to keep file size manageable
-    const MAX_WIDTH = 800;
-    const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
-    canvas.width  = video.videoWidth  * scale;
-    canvas.height = video.videoHeight * scale;
+      const MAX_WIDTH = 1280;
+      const scale = Math.min(1, MAX_WIDTH / video.videoWidth);
+      canvas.width  = video.videoWidth  * scale;
+      canvas.height = video.videoHeight * scale;
 
-    // Draw the current video frame onto the canvas
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert canvas → Base64 JPEG string
-    capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      showPhotoPreview(capturedPhotoBase64);
+      stopCamera();
+    });
+  }
 
-    showPhotoPreview(capturedPhotoBase64);
-    stopCamera();
-  });
-
-  /* — Process selected image file (from gallery or native camera) — */
+  /* — Process selected image file with auto-resize and compression — */
   function handleSelectedFile(file, inputEl) {
     if (!file) return;
 
@@ -332,41 +308,80 @@ function initCameraFeature() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('Selected image is larger than 10MB. Please select a smaller photo.', 'error', 4000);
+    if (file.size > 20 * 1024 * 1024) {
+      showToast('Selected image is larger than 20MB. Please select a smaller photo.', 'error', 4000);
       if (inputEl) inputEl.value = '';
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
-      capturedPhotoBase64 = evt.target.result;
-      showPhotoPreview(capturedPhotoBase64);
-      stopCamera();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // High-res smartphones shoot 12MP-48MP photos. Resize to max 1280px for fast upload.
+        const MAX_DIM = 1280;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        showPhotoPreview(capturedPhotoBase64);
+        stopCamera();
+        if (inputEl) inputEl.value = '';
+      };
+
+      img.onerror = () => {
+        // Fallback to original Base64 if canvas drawing fails
+        capturedPhotoBase64 = e.target.result;
+        showPhotoPreview(capturedPhotoBase64);
+        stopCamera();
+        if (inputEl) inputEl.value = '';
+      };
+
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
 
-  /* — Choose from gallery (file picker) — */
-  fileInput.addEventListener('change', (e) => {
-    handleSelectedFile(e.target.files[0], fileInput);
-  });
-
-  /* — Native device camera input — */
+  /* — Native device camera input (fires when user takes photo on mobile) — */
   if (cameraNativeInput) {
     cameraNativeInput.addEventListener('change', (e) => {
       handleSelectedFile(e.target.files[0], cameraNativeInput);
     });
   }
 
+  /* — Choose from gallery (file picker) — */
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      handleSelectedFile(e.target.files[0], fileInput);
+    });
+  }
+
   /* — Remove attached photo — */
-  removePhotoBtn.addEventListener('click', () => {
-    capturedPhotoBase64 = null;
-    document.getElementById('photo-preview-wrap').style.display = 'none';
-    removePhotoBtn.style.display = 'none';
-    fileInput.value = '';
-    if (cameraNativeInput) cameraNativeInput.value = '';
-  });
+  if (removePhotoBtn) {
+    removePhotoBtn.addEventListener('click', () => {
+      capturedPhotoBase64 = null;
+      document.getElementById('photo-preview-wrap').style.display = 'none';
+      removePhotoBtn.style.display = 'none';
+      if (fileInput) fileInput.value = '';
+      if (cameraNativeInput) cameraNativeInput.value = '';
+    });
+  }
 }
 
 function stopCamera() {
@@ -374,7 +389,8 @@ function stopCamera() {
     cameraStream.getTracks().forEach(track => track.stop());
     cameraStream = null;
   }
-  document.getElementById('camera-stream-wrap').style.display = 'none';
+  const streamWrap = document.getElementById('camera-stream-wrap');
+  if (streamWrap) streamWrap.style.display = 'none';
 }
 
 function showPhotoPreview(base64) {
