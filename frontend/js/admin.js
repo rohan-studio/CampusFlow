@@ -16,7 +16,11 @@ function showToast(message, type = 'info', duration = 4000) {
     document.body.appendChild(container);
   }
 
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const icons = {
+    success: '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg>',
+    error:   '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--danger);"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info:    '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--primary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  };
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
@@ -62,15 +66,15 @@ function normalizeUrgency(urgency) {
 }
 
 const URGENCY_CONFIG = {
-  High:   { badgeClass: 'badge-high',   icon: '🔴' },
-  Medium: { badgeClass: 'badge-medium', icon: '🟡' },
-  Low:    { badgeClass: 'badge-low',    icon: '🟢' },
+  High:   { badgeClass: 'badge-high',   dotClass: 'dot-high' },
+  Medium: { badgeClass: 'badge-medium', dotClass: 'dot-medium' },
+  Low:    { badgeClass: 'badge-low',    dotClass: 'dot-low' },
 };
 
 function urgencyBadge(urgency) {
   const norm = normalizeUrgency(urgency);
-  const cfg = URGENCY_CONFIG[norm] || { badgeClass: 'badge-low', icon: '🟢' };
-  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${norm}</span>`;
+  const cfg = URGENCY_CONFIG[norm] || { badgeClass: 'badge-low', dotClass: 'dot-low' };
+  return `<span class="badge ${cfg.badgeClass}"><span class="dot ${cfg.dotClass}"></span>${norm}</span>`;
 }
 
 function statusBadge(status) {
@@ -79,12 +83,12 @@ function statusBadge(status) {
   const isInProgress = s.toLowerCase().includes('progress');
 
   if (isResolved) {
-    return `<span class="badge badge-resolved">✅ Resolved</span>`;
+    return `<span class="badge badge-resolved"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>`;
   }
   if (isInProgress) {
-    return `<span class="badge badge-inprogress">⚙️ In Progress</span>`;
+    return `<span class="badge badge-inprogress"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--info);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> In Progress</span>`;
   }
-  return `<span class="badge badge-pending">⏳ Pending</span>`;
+  return `<span class="badge badge-pending"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending</span>`;
 }
 
 /* ─────────────────────────────────────────────────────────── */
@@ -260,7 +264,7 @@ async function fetchTickets() {
     console.error('Failed to fetch tickets:', err);
     grid.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">⚠️</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
         <h3>Could not load tickets</h3>
         <p>${err.message || 'Please check your connection and try again.'}</p>
       </div>`;
@@ -311,7 +315,7 @@ function renderTickets() {
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🎉</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
         <h3>No tickets found!</h3>
         <p>There are no tickets matching the current filter.</p>
       </div>`;
@@ -392,19 +396,19 @@ function buildTicketTable(tickets) {
                 <td><span class="ticket-id-badge">${displayId}</span></td>
                 <td>
                   <div class="table-problem-text" title="${escapeHtml(rawDesc)}">
-                    ${hasPhoto ? '<span title="Photo attached (Cloudinary)" style="margin-right:4px;">📸</span>' : ''}
+                    ${hasPhoto ? '<span title="Photo attached" style="margin-right:4px;display:inline-flex;align-items:center;vertical-align:middle;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>' : ''}
                     ${escapeHtml(shortDesc)}
                   </div>
                 </td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
-                <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
-                <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(t.department || '—')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(t.location || '—')}</span></td>
                 <td>${urgencyBadge(urgencyKey)}</td>
                 <td>${statusBadge(t.status)}</td>
                 <td style="text-align: right;">
                   ${!isResolved ? `
-                    <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved">
-                      ✔ Resolve
+                    <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved" style="display:inline-flex;align-items:center;gap:4px;">
+                      <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Resolve
                     </button>
                   ` : '<span class="badge badge-resolved" style="font-size: .7rem; padding: 2px 8px;">Resolved</span>'}
                 </td>
@@ -437,7 +441,7 @@ function buildTicketCard(ticket) {
       <div>
         <div class="ticket-meta">
           <span class="ticket-id">${displayId}</span>
-          ${hasPhoto ? '<span class="badge badge-accent" style="font-size:.7rem; padding:2px 8px;">📸 Photo</span>' : ''}
+          ${hasPhoto ? '<span class="badge badge-accent" style="font-size:.7rem; padding:2px 8px; display:inline-flex; align-items:center; gap:3px;"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Photo</span>' : ''}
           ${urgencyBadge(urgencyKey)}
           ${statusBadge(ticket.status)}
           <span class="ticket-date">${formatDate(ticket.created_at)}</span>
@@ -446,13 +450,13 @@ function buildTicketCard(ticket) {
         <p class="ticket-description">${escapeHtml(shortDesc)}</p>
 
         <div class="ticket-footer">
-          <span class="ticket-dept">🏫 ${ticket.department || 'Unknown Dept.'}</span>
+          <span class="ticket-dept" style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${ticket.department || 'Unknown Dept.'}</span>
           <span class="badge badge-accent" style="margin-left:4px;">
             ${ticket.category || 'General'}
           </span>
           ${ticket.location ? `
-          <span class="badge" style="margin-left:4px; background: rgba(0,0,0,0.06); color: var(--text-muted);">
-            📍 ${escapeHtml(ticket.location)}
+          <span class="badge" style="margin-left:4px; background: rgba(0,0,0,0.06); color: var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+            <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(ticket.location)}
           </span>` : ''}
         </div>
       </div>
@@ -463,9 +467,10 @@ function buildTicketCard(ticket) {
             class="btn btn-success btn-sm"
             data-resolve-id="${resolveTargetId}"
             title="Mark as Resolved"
-          >✔ Resolve</button>
+            style="display:inline-flex;align-items:center;gap:4px;"
+          ><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Resolve</button>
         ` : `
-          <span class="badge badge-resolved">✅ Resolved</span>
+          <span class="badge badge-resolved"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>
         `}
       </div>
     </div>
@@ -511,12 +516,12 @@ function openTicketModal(ticketId) {
 
       <div class="modal-info-item">
         <div class="modal-info-label">Assigned Department</div>
-        <div class="modal-info-value">🏫 ${escapeHtml(ticket.department || 'Not Assigned')}</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(ticket.department || 'Not Assigned')}</div>
       </div>
 
       <div class="modal-info-item">
         <div class="modal-info-label">Campus Location</div>
-        <div class="modal-info-value">📍 ${escapeHtml(ticket.location || 'Not Specified')}</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(ticket.location || 'Not Specified')}</div>
       </div>
 
       <div class="modal-info-item" style="grid-column: 1 / -1;">
@@ -532,7 +537,7 @@ function openTicketModal(ticketId) {
 
     ${ticket.image_url ? `
     <div style="margin-top:16px;">
-      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Attached Photo (Cloudinary)</div>
       <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo in new tab">
         <img
           src="${ticket.image_url}"
@@ -541,26 +546,26 @@ function openTicketModal(ticketId) {
           loading="lazy"
         />
       </a>
-      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to open high-resolution photo in new tab</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg> Click image to open high-resolution photo in new tab</div>
     </div>` : ''}
   `;
 
   footerEl.innerHTML = `
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
       ${!isInProgress && !isResolved ? `
-        <button class="btn btn-secondary btn-sm" id="modal-inprogress-btn">
-          ⚙️ Mark In Progress
+        <button class="btn btn-secondary btn-sm" id="modal-inprogress-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Mark In Progress
         </button>
       ` : ''}
 
       ${!isResolved ? `
-        <button class="btn btn-success btn-sm" id="modal-resolve-btn">
-          ✔ Mark Resolved
+        <button class="btn btn-success btn-sm" id="modal-resolve-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Mark Resolved
         </button>
       ` : `
-        <span class="badge badge-resolved" style="padding: 6px 12px; font-size: .8rem;">✅ Resolved</span>
-        <button class="btn btn-secondary btn-sm" id="modal-reopen-btn">
-          🔄 Reopen Ticket
+        <span class="badge badge-resolved" style="padding: 6px 12px; font-size: .8rem; display:inline-flex; align-items:center; gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>
+        <button class="btn btn-secondary btn-sm" id="modal-reopen-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Reopen Ticket
         </button>
       `}
     </div>

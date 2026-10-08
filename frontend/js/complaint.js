@@ -12,13 +12,19 @@ function showToast(message, type = 'info', duration = 4000) {
     document.body.appendChild(container);
   }
 
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const icons = {
+    success: '<svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" style="color:#10b981;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    error: '<svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" style="color:#ef4444;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info: '<svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" style="color:#6366f1;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
     <span class="toast-icon">${icons[type] || icons.info}</span>
     <span class="toast-message">${message}</span>
-    <span class="toast-close" role="button" aria-label="Close">✕</span>
+    <span class="toast-close" role="button" aria-label="Close">
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </span>
   `;
 
   container.appendChild(toast);
@@ -45,12 +51,12 @@ function normalizeUrgency(urgency) {
 function getUrgencyBadge(urgency) {
   const norm = normalizeUrgency(urgency);
   const cfg = {
-    High:   { class: 'badge-high',   icon: '🔴', label: 'High' },
-    Medium: { class: 'badge-medium', icon: '🟡', label: 'Medium' },
-    Low:    { class: 'badge-low',    icon: '🟢', label: 'Low' },
-  }[norm] || { class: 'badge-low', icon: '🟢', label: 'Low' };
+    High:   { class: 'badge-high',   dot: 'dot-high',   label: 'High' },
+    Medium: { class: 'badge-medium', dot: 'dot-medium', label: 'Medium' },
+    Low:    { class: 'badge-low',    dot: 'dot-low',    label: 'Low' },
+  }[norm] || { class: 'badge-low', dot: 'dot-low', label: 'Low' };
 
-  return `<span class="badge ${cfg.class}">${cfg.icon} ${cfg.label}</span>`;
+  return `<span class="badge ${cfg.class}"><span class="dot ${cfg.dot}"></span>${cfg.label}</span>`;
 }
 
 function getStatusBadge(status) {
@@ -59,12 +65,12 @@ function getStatusBadge(status) {
   const isInProgress = s.toLowerCase().includes('progress');
 
   if (isResolved) {
-    return `<span class="badge badge-resolved">✅ Resolved</span>`;
+    return `<span class="badge badge-resolved"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" style="color:#065f46;margin-right:4px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Resolved</span>`;
   }
   if (isInProgress) {
-    return `<span class="badge badge-inprogress">⚙️ In Progress</span>`;
+    return `<span class="badge badge-inprogress"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" style="color:#0369a1;margin-right:4px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>In Progress</span>`;
   }
-  return `<span class="badge badge-pending">⏳ Pending</span>`;
+  return `<span class="badge badge-pending"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" style="color:#1e40af;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending</span>`;
 }
 
 /* ── Format Date ──────────────────────────────────────────── */
@@ -102,7 +108,9 @@ function displayResult(ticket) {
   resultArea.innerHTML = `
     <div class="result-card">
       <div class="result-success-header">
-        <div class="result-icon">✅</div>
+        <div class="result-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
         <div>
           <div class="result-title">Complaint Submitted!</div>
           <div class="result-subtitle">Track your complaint using the ticket ID below.</div>
@@ -156,7 +164,10 @@ function displayResult(ticket) {
 
       ${ticket.image_url ? `
       <div style="margin-top:16px;">
-        <div class="result-field-label" style="margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+        <div class="result-field-label" style="margin-bottom:8px; display:inline-flex; align-items:center; gap:5px;">
+          <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          Attached Photo
+        </div>
         <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo">
           <img
             src="${ticket.image_url}"
@@ -165,11 +176,15 @@ function displayResult(ticket) {
             loading="lazy"
           />
         </a>
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to view high-resolution photo in new tab</div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:inline-flex; align-items:center; gap:4px;">
+          <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Click image to view high-resolution photo in new tab
+        </div>
       </div>` : ''}
 
-      <p style="margin-top: 16px; font-size: .82rem; color: var(--text-muted); line-height: 1.6;">
-        📧 Save your ticket ID for reference. Our team will review and address your complaint promptly.
+      <p style="margin-top: 16px; font-size: .82rem; color: var(--text-muted); line-height: 1.6; display:flex; align-items:flex-start; gap:8px;">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="color:var(--primary);flex-shrink:0;margin-top:2px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span>Save your ticket ID for reference. Our team will review and address your complaint promptly.</span>
       </p>
     </div>
   `;
@@ -381,7 +396,9 @@ function initComplaintForm() {
       showToast(err.message || 'Failed to submit complaint. Please try again.', 'error', 6000);
     } finally {
       submitBtn.disabled = false;
-      if (btnText) btnText.textContent = 'Submit Complaint 🚀';
+      if (btnText) {
+        btnText.innerHTML = 'Submit Complaint <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:#fff;margin-left:4px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>';
+      }
     }
   });
 }
@@ -430,7 +447,7 @@ async function fetchAndRenderHomeComplaints() {
     console.error('Failed to load recent complaints:', err);
     container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">⚠️</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
         <h3>Could not load recent complaints</h3>
         <p>Make sure the backend is running. We will keep checking.</p>
       </div>`;
@@ -448,7 +465,7 @@ function renderHomeComplaints() {
   if (allHomeTickets.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🎉</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
         <h3>No complaints reported yet!</h3>
         <p>All campus facilities are currently in great condition.</p>
       </div>`;
@@ -490,13 +507,13 @@ function renderHomeComplaints() {
                 <td><span class="ticket-id-badge">${displayId}</span></td>
                 <td>
                   <div class="table-problem-text" title="${escapeHtml(rawDesc)}">
-                    ${hasPhoto ? '<span title="Photo attached (Cloudinary)" style="margin-right:4px;">📸</span>' : ''}
+                    ${hasPhoto ? '<span title="Photo attached" style="margin-right:4px;display:inline-flex;align-items:center;vertical-align:middle;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>' : ''}
                     ${escapeHtml(shortDesc)}
                   </div>
                 </td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
-                <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
-                <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(t.department || '—')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(t.location || '—')}</span></td>
                 <td>${getUrgencyBadge(urgencyKey)}</td>
                 <td>${getStatusBadge(t.status)}</td>
               </tr>
@@ -556,12 +573,12 @@ function openHomeModal(ticketId) {
 
       <div class="modal-info-item">
         <div class="modal-info-label">Department</div>
-        <div class="modal-info-value">🏫 ${escapeHtml(ticket.department || 'Not Assigned')}</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(ticket.department || 'Not Assigned')}</div>
       </div>
 
       <div class="modal-info-item">
         <div class="modal-info-label">Location</div>
-        <div class="modal-info-value">📍 ${escapeHtml(ticket.location || 'Not Specified')}</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(ticket.location || 'Not Specified')}</div>
       </div>
 
       <div class="modal-info-item" style="grid-column: 1 / -1;">
@@ -577,7 +594,7 @@ function openHomeModal(ticketId) {
 
     ${ticket.image_url ? `
     <div style="margin-top:16px;">
-      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Attached Photo (Cloudinary)</div>
       <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo in new tab">
         <img
           src="${ticket.image_url}"
@@ -586,7 +603,7 @@ function openHomeModal(ticketId) {
           loading="lazy"
         />
       </a>
-      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to open high-resolution photo in new tab</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg> Click image to open high-resolution photo in new tab</div>
     </div>` : ''}
   `;
 

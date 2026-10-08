@@ -1538,3 +1538,34 @@ textarea.form-control { min-height: 140px; }
   transform: scale(1.015);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
 }
+
+/* ── SVG Icons & Dots System ──────────────────────────────── */
+.ui-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.step-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--primary);
+  display: block;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 0.05em;
+}
+.dot-high { background-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+.dot-medium { background-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.25); }
+.dot-low { background-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.25); }
