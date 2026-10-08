@@ -1,18 +1,21 @@
 import os
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+import cloudinary.uploader
 
-
+from . import cloudinary_config
 
 from .tickets import (
     create_ticket_sqlalchemy,
     get_ticket_sqlalchemy,
     get_all_tickets_sqlalchemy,
-    update_ticket_status_sqlalchemy
+    update_ticket_status_sqlalchemy,
+    get_ticket_by_submission_id,
 )
 
 
@@ -37,9 +40,6 @@ load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
-class ComplaintRequest(BaseModel):
-    message: str
-
 class ComplaintAnalysis(BaseModel):
     category: str
     location: str
@@ -48,6 +48,10 @@ class ComplaintAnalysis(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: str
+
+class ImageModeration(BaseModel):
+    is_safe: bool
+    reason: str
 
 
 
@@ -91,7 +95,47 @@ def analyze_complaint(message):
 
 
 
+def moderate_image(image_data, mime_type):
 
+    prompt = """
+    Check this image for inappropriate content.
+
+    This image will be uploaded to a college campus complaint system.
+
+    Allow normal campus-related images such as:
+    - damaged equipment
+    - classrooms
+    - laboratories
+    - buildings
+    - electrical problems
+    - water problems
+    - cleanliness problems
+
+    Reject images containing:
+    - sexually explicit or nude content
+    - graphic violence or gore
+    - hateful or abusive content
+    - other clearly inappropriate content
+
+    Return whether the image is allowed and give a short reason.
+    """
+
+    response = client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=[
+            types.Part.from_bytes(
+                data=image_data,
+                mime_type=mime_type
+            ),
+            prompt
+        ],
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": ImageModeration,
+        }
+    )
+
+    return response.parsed
 
 
 
@@ -123,33 +167,81 @@ def health():
 
 
 
-
 @app.post("/complaint")
-def create_complaint(complaint: ComplaintRequest):
+async def create_complaint(
+    message: str = Form(...),
+    photo: UploadFile | None = File(None),
+    submission_id: str = Form(...)
+):
+
+    exist_ticket = get_ticket_by_submission_id(submission_id)
+
+    if exist_ticket:
+        return {
+            "message": "This complaint has already been submitted",
+            "ticket": exist_ticket
+        }
 
 
-    analysis = analyze_complaint(complaint.message)
+    analysis = analyze_complaint(message)
     department = find_department(analysis.category.lower())
 
-    ticket = create_ticket_sqlalchemy(analysis, department)
-    
+    image_url = None
+
+    if photo:
+        image_data = await photo.read()
+
+        moderation = moderate_image(
+            image_data,
+            photo.content_type
+        )
+
+        if not moderation.is_safe:
+            raise HTTPException(
+                status_code=400,
+                detail="Image rejected: " + moderation.reason
+            )
+        
+        result = cloudinary.uploader.upload(image_data)
+
+        image_url = result["secure_url"]
+
+    ticket = create_ticket_sqlalchemy(
+        analysis,
+        department,
+        image_url,
+        submission_id=submission_id
+    )
+
     return {
         "message": "Complaint received",
-        "complaint": complaint.message,
+        "complaint": message,
         "analysis": analysis,
         "department": department,
         "ticket": ticket
     }
 
 
-
 @app.post("/test-photo")
 async def test_photo(photo: UploadFile = File(...)):
-    
+    image_data = await photo.read()
+
+    moderation = moderate_image(image_data, photo.content_type)
+
+    if not moderation.is_safe:
+        return {
+            "message": "Image rejected",
+            "reason": moderation.reason
+        }
+
+    result = cloudinary.uploader.upload(image_data)
+
+
+
     return {
-        "filename": photo.filename,
-        "content_type": photo.content_type,
-    } 
+        "message": "Image approved and uploaded",
+        "cloudinary_url": result["secure_url"]
+    }  
 
 
 

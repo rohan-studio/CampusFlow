@@ -6,3 +6,5 @@ python-dotenv
 pydantic
 psycopg[binary]
 psycopg2-binary
+cloudinary
+python-multipart

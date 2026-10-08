@@ -5,8 +5,7 @@ from .models import Ticket
 
 
 
-def create_ticket_sqlalchemy(analysis, department):
-
+def create_ticket_sqlalchemy(analysis, department, image_url=None, submission_id=None):
     
     with SessionLocal() as session:
         db_ticket = Ticket(
@@ -15,7 +14,9 @@ def create_ticket_sqlalchemy(analysis, department):
             category=analysis.category,
             location=analysis.location,
             problem=analysis.problem,
-            urgency=analysis.urgency
+            urgency=analysis.urgency,
+            image_url=image_url,
+            submission_id=submission_id
         )
 
         try:
@@ -35,12 +36,21 @@ def create_ticket_sqlalchemy(analysis, department):
             session.rollback()
             raise
 
-        
-
-        
-
     return result_ticket
 
+
+def get_ticket_by_submission_id(submission_id):
+    with SessionLocal() as session:
+        statement = select(Ticket).where(
+            Ticket.submission_id == submission_id
+        )
+
+        ticket = session.scalars(statement).first()
+
+        if not ticket:
+            return None
+
+        return ticket_to_dict(ticket)
 
 
 def get_ticket_sqlalchemy(ticket_id):
@@ -94,7 +104,9 @@ def ticket_to_dict(ticket):
         "category": ticket.category,
         "location": ticket.location,
         "problem": ticket.problem,
-        "urgency": ticket.urgency
+        "urgency": ticket.urgency,
+        "image_url": ticket.image_url
     }
+
 
 

@@ -147,13 +147,16 @@ function displayResult(ticket) {
 
       ${ticket.image_url ? `
       <div style="margin-top:16px;">
-        <div class="result-field-label" style="margin-bottom:8px;">📸 Attached Photo</div>
-        <img
-          src="${ticket.image_url}"
-          alt="Complaint photo"
-          style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;"
-          loading="lazy"
-        />
+        <div class="result-field-label" style="margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+        <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo">
+          <img
+            src="${ticket.image_url}"
+            alt="Complaint photo"
+            style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;cursor:pointer;"
+            loading="lazy"
+          />
+        </a>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to view high-resolution photo in new tab</div>
       </div>` : ''}
 
       <p style="margin-top: 16px; font-size: .82rem; color: var(--text-muted); line-height: 1.6;">
@@ -255,6 +258,18 @@ function initCameraFeature() {
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (JPEG, PNG, WEBP, etc.)', 'error', 4000);
+      fileInput.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Selected image is larger than 10MB. Please select a smaller photo.', 'error', 4000);
+      fileInput.value = '';
+      return;
+    }
 
     // FileReader converts the file to a Base64 Data URL, same format as canvas
     const reader = new FileReader();
@@ -465,10 +480,16 @@ function renderHomeComplaints() {
             const displayId  = t.ticket_id || `#${t.id}`;
             const targetId   = t.ticket_id || t.id;
 
+            const hasPhoto   = Boolean(t.image_url);
             return `
               <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click row to view full details">
                 <td><span class="ticket-id-badge">${displayId}</span></td>
-                <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
+                <td>
+                  <div class="table-problem-text" title="${escapeHtml(rawDesc)}">
+                    ${hasPhoto ? '<span title="Photo attached (Cloudinary)" style="margin-right:4px;">📸</span>' : ''}
+                    ${escapeHtml(shortDesc)}
+                  </div>
+                </td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
                 <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
                 <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
@@ -552,13 +573,16 @@ function openHomeModal(ticketId) {
 
     ${ticket.image_url ? `
     <div style="margin-top:16px;">
-      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo</div>
-      <img
-        src="${ticket.image_url}"
-        alt="Complaint photo"
-        style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;"
-        loading="lazy"
-      />
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+      <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo in new tab">
+        <img
+          src="${ticket.image_url}"
+          alt="Complaint photo"
+          style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;cursor:pointer;"
+          loading="lazy"
+        />
+      </a>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to open high-resolution photo in new tab</div>
     </div>` : ''}
   `;
 

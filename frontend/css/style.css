@@ -1488,3 +1488,23 @@ textarea.form-control { min-height: 140px; }
   .complaints-actions-row button,
   .complaints-actions-row a { width: 100%; text-align: center; }
 }
+
+
+/* ── Photo Preview & Cloudinary image helpers ─────────────── */
+.modal-photo-img,
+.result-photo-img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-photo-img:hover,
+.result-photo-img:hover {
+  transform: scale(1.015);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+}

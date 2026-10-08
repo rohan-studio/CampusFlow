@@ -376,11 +376,17 @@ function buildTicketTable(tickets) {
             const shortDesc  = rawDesc.length > 55 ? rawDesc.slice(0, 55) + '…' : rawDesc;
             const displayId  = t.ticket_id || `#${t.id}`;
             const targetId   = t.ticket_id || t.id;
+            const hasPhoto   = Boolean(t.image_url);
 
             return `
               <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click row to view full details">
                 <td><span class="ticket-id-badge">${displayId}</span></td>
-                <td><div class="table-problem-text" title="${escapeHtml(rawDesc)}">${escapeHtml(shortDesc)}</div></td>
+                <td>
+                  <div class="table-problem-text" title="${escapeHtml(rawDesc)}">
+                    ${hasPhoto ? '<span title="Photo attached (Cloudinary)" style="margin-right:4px;">📸</span>' : ''}
+                    ${escapeHtml(shortDesc)}
+                  </div>
+                </td>
                 <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
                 <td><span>🏫 ${escapeHtml(t.department || '—')}</span></td>
                 <td><span>📍 ${escapeHtml(t.location || '—')}</span></td>
@@ -411,6 +417,7 @@ function buildTicketCard(ticket) {
     : 'No description provided.';
   const displayId  = ticket.ticket_id || `#${ticket.id}`;
   const resolveTargetId = ticket.ticket_id || ticket.id;
+  const hasPhoto   = Boolean(ticket.image_url);
 
   return `
     <div class="ticket-card urgency-${urgencyKey.toLowerCase()} ${isResolved ? 'resolved' : ''}"
@@ -421,6 +428,7 @@ function buildTicketCard(ticket) {
       <div>
         <div class="ticket-meta">
           <span class="ticket-id">${displayId}</span>
+          ${hasPhoto ? '<span class="badge badge-accent" style="font-size:.7rem; padding:2px 8px;">📸 Photo</span>' : ''}
           ${urgencyBadge(urgencyKey)}
           ${statusBadge(ticket.status)}
           <span class="ticket-date">${formatDate(ticket.created_at)}</span>
@@ -472,7 +480,9 @@ function openTicketModal(ticketId) {
   if (!overlay || !bodyEl) return;
 
   const displayId  = ticket.ticket_id || `#${ticket.id}`;
-  const isResolved = ticket.status?.toLowerCase() === 'resolved';
+  const statusLower = (ticket.status || 'pending').toLowerCase();
+  const isResolved = statusLower === 'resolved';
+  const isInProgress = statusLower.includes('progress');
   const targetId   = ticket.ticket_id || ticket.id;
 
   if (titleEl) titleEl.textContent = `Ticket Details — ${displayId}`;
@@ -510,16 +520,41 @@ function openTicketModal(ticketId) {
       <h4>Complaint Description</h4>
       <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
     </div>
+
+    ${ticket.image_url ? `
+    <div style="margin-top:16px;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📸 Attached Photo (Cloudinary)</div>
+      <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo in new tab">
+        <img
+          src="${ticket.image_url}"
+          alt="Complaint photo"
+          style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;cursor:pointer;"
+          loading="lazy"
+        />
+      </a>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">🔍 Click image to open high-resolution photo in new tab</div>
+    </div>` : ''}
   `;
 
   footerEl.innerHTML = `
-    ${!isResolved ? `
-      <button class="btn btn-success" id="modal-resolve-btn" data-modal-resolve="${targetId}">
-        ✔ Mark as Resolved
-      </button>
-    ` : `
-      <span class="badge badge-resolved" style="padding: 8px 16px; font-size: .85rem;">✅ Resolved</span>
-    `}
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      ${!isInProgress && !isResolved ? `
+        <button class="btn btn-secondary btn-sm" id="modal-inprogress-btn">
+          ⚙️ Mark In Progress
+        </button>
+      ` : ''}
+
+      ${!isResolved ? `
+        <button class="btn btn-success btn-sm" id="modal-resolve-btn">
+          ✔ Mark Resolved
+        </button>
+      ` : `
+        <span class="badge badge-resolved" style="padding: 6px 12px; font-size: .8rem;">✅ Resolved</span>
+        <button class="btn btn-secondary btn-sm" id="modal-reopen-btn">
+          🔄 Reopen Ticket
+        </button>
+      `}
+    </div>
     <button class="btn btn-secondary" id="modal-close-action">Close</button>
   `;
 
@@ -527,8 +562,24 @@ function openTicketModal(ticketId) {
   const modalResolveBtn = document.getElementById('modal-resolve-btn');
   if (modalResolveBtn) {
     modalResolveBtn.addEventListener('click', async () => {
-      await handleResolve(targetId, modalResolveBtn);
-      openTicketModal(targetId); // refresh modal state to show resolved
+      await handleStatusUpdate(targetId, 'Resolved', modalResolveBtn);
+      openTicketModal(targetId);
+    });
+  }
+
+  const modalInProgressBtn = document.getElementById('modal-inprogress-btn');
+  if (modalInProgressBtn) {
+    modalInProgressBtn.addEventListener('click', async () => {
+      await handleStatusUpdate(targetId, 'In Progress', modalInProgressBtn);
+      openTicketModal(targetId);
+    });
+  }
+
+  const modalReopenBtn = document.getElementById('modal-reopen-btn');
+  if (modalReopenBtn) {
+    modalReopenBtn.addEventListener('click', async () => {
+      await handleStatusUpdate(targetId, 'Pending', modalReopenBtn);
+      openTicketModal(targetId);
     });
   }
 
@@ -545,29 +596,33 @@ function closeTicketModal() {
   if (overlay) overlay.classList.remove('visible');
 }
 
-async function handleResolve(ticketId, btn) {
+async function handleStatusUpdate(ticketId, newStatus, btn) {
   const originalHTML = btn.innerHTML;
   btn.disabled  = true;
   btn.innerHTML = '<span class="btn-spinner"></span>';
 
   try {
-    await resolveTicket(ticketId);
+    await updateTicketStatus(ticketId, newStatus);
 
     /* Update local state */
     const idx = allTickets.findIndex(t =>
       String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
     );
-    if (idx !== -1) allTickets[idx].status = 'Resolved';
+    if (idx !== -1) allTickets[idx].status = newStatus;
 
     updateDashStats();
     renderTickets();
-    showToast(`Ticket ${ticketId} resolved successfully!`, 'success');
+    showToast(`Ticket ${ticketId} updated to "${newStatus}"!`, 'success');
   } catch (err) {
-    console.error('Resolve error:', err);
+    console.error('Status update error:', err);
     btn.disabled  = false;
     btn.innerHTML = originalHTML;
-    showToast(err.message || 'Failed to resolve ticket.', 'error');
+    showToast(err.message || 'Failed to update ticket status.', 'error');
   }
+}
+
+async function handleResolve(ticketId, btn) {
+  return handleStatusUpdate(ticketId, 'Resolved', btn);
 }
 
 function escapeHtml(str) {
