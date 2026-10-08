@@ -1,5 +1,11 @@
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, DateTime, Integer, String, func
+from sqlalchemy import Column, DateTime, Integer, String
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_ist_now():
+    return datetime.now(IST).replace(tzinfo=None)
 
 
 class Base(DeclarativeBase):
@@ -18,5 +24,5 @@ class Ticket(Base):
     location = Column(String)
     problem = Column(String)
     urgency = Column(String)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=get_ist_now)
     image_url = Column(String)
