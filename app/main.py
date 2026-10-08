@@ -83,15 +83,21 @@ def analyze_complaint(message):
     {message}
     """
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": ComplaintAnalysis,
-        }
-    )
-    return response.parsed
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": ComplaintAnalysis,
+            }
+        )
+        return response.parsed
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail="AI complaint analysis is temporarily busy. Please try again shortly."
+        )
 
 
 
@@ -120,22 +126,27 @@ def moderate_image(image_data, mime_type):
     Return whether the image is allowed and give a short reason.
     """
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=[
-            types.Part.from_bytes(
-                data=image_data,
-                mime_type=mime_type
-            ),
-            prompt
-        ],
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": ImageModeration,
-        }
-    )
-
-    return response.parsed
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=[
+                types.Part.from_bytes(
+                    data=image_data,
+                    mime_type=mime_type
+                ),
+                prompt
+            ],
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": ImageModeration,
+            }
+        )
+        return response.parsed
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Image check service is temporarily busy. Please try again shortly."
+        )
 
 
 
