@@ -222,28 +222,6 @@ async def create_complaint(
     }
 
 
-@app.post("/test-photo")
-async def test_photo(photo: UploadFile = File(...)):
-    image_data = await photo.read()
-
-    moderation = moderate_image(image_data, photo.content_type)
-
-    if not moderation.is_safe:
-        return {
-            "message": "Image rejected",
-            "reason": moderation.reason
-        }
-
-    result = cloudinary.uploader.upload(image_data)
-
-
-
-    return {
-        "message": "Image approved and uploaded",
-        "cloudinary_url": result["secure_url"]
-    }  
-
-
 
 @app.get("/tickets")
 def get_tickets():
