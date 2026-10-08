@@ -86,6 +86,7 @@
                     <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                     Open Camera
                   </button>
+                  <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="display:none;" />
                   <label class="btn btn-secondary" id="upload-file-label" style="gap:8px;padding:9px 18px;font-size:.85rem;cursor:pointer;margin:0;">
                     <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                     Choose from Gallery
@@ -99,7 +100,7 @@
 
                 <!-- Live Camera Stream -->
                 <div id="camera-stream-wrap" style="display:none;margin-top:14px;border-radius:var(--radius);overflow:hidden;border:2px solid var(--border);background:#000;position:relative;">
-                  <video id="camera-video" autoplay playsinline style="width:100%;max-height:260px;object-fit:cover;display:block;"></video>
+                  <video id="camera-video" autoplay playsinline muted style="width:100%;max-height:260px;object-fit:cover;display:block;"></video>
                   <div style="position:absolute;bottom:0;left:0;right:0;padding:12px;display:flex;gap:10px;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,0.6));">
                     <button type="button" class="btn btn-primary" id="capture-btn" style="padding:9px 24px;font-size:.9rem;">
                       <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:#fff;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Capture

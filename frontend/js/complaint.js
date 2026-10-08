@@ -224,41 +224,86 @@ let cameraStream        = null;   // holds the active MediaStream so we can stop
 
 /* ── Camera Logic ─────────────────────────────────────────── */
 function initCameraFeature() {
-  const openCameraBtn   = document.getElementById('open-camera-btn');
-  const closeCameraBtn  = document.getElementById('close-camera-btn');
-  const captureBtn      = document.getElementById('capture-btn');
-  const removePhotoBtn  = document.getElementById('remove-photo-btn');
-  const fileInput       = document.getElementById('file-input');
+  const openCameraBtn     = document.getElementById('open-camera-btn');
+  const closeCameraBtn    = document.getElementById('close-camera-btn');
+  const captureBtn        = document.getElementById('capture-btn');
+  const removePhotoBtn    = document.getElementById('remove-photo-btn');
+  const fileInput         = document.getElementById('file-input');
+  const cameraNativeInput = document.getElementById('camera-native-input');
 
-  if (!openCameraBtn) return;  // not on a page with the camera UI
+  if (!openCameraBtn) return; // not on a page with the camera UI
 
-  /* — Open live camera — */
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  /* — Open live camera / native camera — */
   openCameraBtn.addEventListener('click', async () => {
-    try {
-      // Ask browser for permission to use the camera
-      // getUserMedia returns a Promise that resolves with a MediaStream
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },  // prefer rear camera on phones
-        audio: false
-      });
+    // On mobile devices, directly open native camera app (avoids browser WebRTC permission errors)
+    if (isMobile && cameraNativeInput) {
+      cameraNativeInput.click();
+      return;
+    }
 
+    // On desktop/laptop, try to start live webcam feed
+    let stream = null;
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      try {
+        // Try rear/environment if available, or any webcam
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+      } catch (err1) {
+        try {
+          // Fallback: request simple video without constraints (standard laptop webcam)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        } catch (err2) {
+          console.warn('Live camera stream unavailable:', err2);
+          stream = null;
+        }
+      }
+    }
+
+    if (stream) {
+      cameraStream = stream;
       const video = document.getElementById('camera-video');
-      video.srcObject = cameraStream;  // feed the stream into the <video> element
-
+      if (video) {
+        video.muted = true;
+        video.srcObject = cameraStream;
+        try {
+          await video.play();
+        } catch (playErr) {
+          console.warn('Video play error:', playErr);
+        }
+      }
       document.getElementById('camera-stream-wrap').style.display = 'block';
       document.getElementById('photo-preview-wrap').style.display  = 'none';
-    } catch (err) {
-      showToast('Camera access denied. Please allow camera permission or use gallery.', 'error', 5000);
+      showToast('Live camera ready! Frame your shot and click Capture.', 'info', 3000);
+    } else {
+      // If WebRTC is blocked/unavailable, seamlessly fallback to device camera/photo picker!
+      if (cameraNativeInput) {
+        cameraNativeInput.click();
+      } else if (fileInput) {
+        fileInput.click();
+      }
+      showToast('Opening device camera / photo picker (Tip: allow camera in browser address bar for live webcam).', 'info', 4500);
     }
   });
 
-  /* — Cancel / close camera — */
+  /* — Cancel / close live camera — */
   closeCameraBtn.addEventListener('click', stopCamera);
 
   /* — Capture a frame from the live video — */
   captureBtn.addEventListener('click', () => {
     const video  = document.getElementById('camera-video');
     const canvas = document.getElementById('capture-canvas');
+
+    if (!video || !video.videoWidth) {
+      showToast('Camera stream is still starting. Please wait a moment and try again.', 'error', 3000);
+      return;
+    }
 
     // Resize to max 800px wide to keep file size manageable
     const MAX_WIDTH = 800;
@@ -271,38 +316,48 @@ function initCameraFeature() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // Convert canvas → Base64 JPEG string
-    // This is the format Cloudinary understands: "data:image/jpeg;base64,..."
     capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
     showPhotoPreview(capturedPhotoBase64);
     stopCamera();
   });
 
-  /* — Choose from gallery (file picker) — */
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
+  /* — Process selected image file (from gallery or native camera) — */
+  function handleSelectedFile(file, inputEl) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       showToast('Please select a valid image file (JPEG, PNG, WEBP, etc.)', 'error', 4000);
-      fileInput.value = '';
+      if (inputEl) inputEl.value = '';
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
       showToast('Selected image is larger than 10MB. Please select a smaller photo.', 'error', 4000);
-      fileInput.value = '';
+      if (inputEl) inputEl.value = '';
       return;
     }
 
-    // FileReader converts the file to a Base64 Data URL, same format as canvas
     const reader = new FileReader();
     reader.onload = (evt) => {
       capturedPhotoBase64 = evt.target.result;
       showPhotoPreview(capturedPhotoBase64);
+      stopCamera();
     };
     reader.readAsDataURL(file);
+  }
+
+  /* — Choose from gallery (file picker) — */
+  fileInput.addEventListener('change', (e) => {
+    handleSelectedFile(e.target.files[0], fileInput);
   });
+
+  /* — Native device camera input — */
+  if (cameraNativeInput) {
+    cameraNativeInput.addEventListener('change', (e) => {
+      handleSelectedFile(e.target.files[0], cameraNativeInput);
+    });
+  }
 
   /* — Remove attached photo — */
   removePhotoBtn.addEventListener('click', () => {
@@ -310,6 +365,7 @@ function initCameraFeature() {
     document.getElementById('photo-preview-wrap').style.display = 'none';
     removePhotoBtn.style.display = 'none';
     fileInput.value = '';
+    if (cameraNativeInput) cameraNativeInput.value = '';
   });
 }
 
@@ -386,6 +442,8 @@ function initComplaintForm() {
       if (previewWrap) previewWrap.style.display = 'none';
       const removeBtn = document.getElementById('remove-photo-btn');
       if (removeBtn) removeBtn.style.display = 'none';
+      const cameraNativeInput = document.getElementById('camera-native-input');
+      if (cameraNativeInput) cameraNativeInput.value = '';
 
       /* Refresh home stats & complaints table */
       loadHomeStats();
