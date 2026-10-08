@@ -382,7 +382,6 @@ async function loadHomeStats() {
   const resolvedEl = document.getElementById('home-stat-resolved');
   const pendingEl  = document.getElementById('home-stat-pending');
   const deptsEl    = document.getElementById('home-stat-depts');
-  const satEl      = document.getElementById('home-stat-satisfaction');
 
   if (!resolvedEl && !pendingEl) return;
 
@@ -395,10 +394,6 @@ async function loadHomeStats() {
     if (resolvedEl) resolvedEl.textContent = resolved;
     if (pendingEl)  pendingEl.textContent  = pending;
     if (deptsEl)    deptsEl.textContent    = depts || 0;
-    if (satEl && tickets.length > 0) {
-      const rate = Math.round((resolved / tickets.length) * 100);
-      satEl.textContent = `${rate}%`;
-    }
   } catch {
     // If backend is offline or starting up, keep default numbers
   }
