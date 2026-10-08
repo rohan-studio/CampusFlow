@@ -203,8 +203,5 @@ def redirect_root():
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 def redirect_to_frontend(full_path: str):
-    # Exclude internal FastAPI paths like docs and openapi
-    if full_path in ["docs", "redoc", "openapi.json"]:
-        raise HTTPException(status_code=404)
     target = f"{FRONTEND_URL.rstrip('/')}/{full_path}" if full_path else FRONTEND_URL
     return RedirectResponse(url=target, status_code=307)
