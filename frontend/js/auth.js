@@ -272,10 +272,95 @@ function initAuthGate() {
   }
 }
 
+/**
+ * Mobile Navigation Toggle & Drawer Handler
+ * Provides smooth mobile menu with overlay for touchscreens
+ */
+function initMobileNavbar() {
+  const navbar = document.querySelector('.navbar');
+  const navContainer = document.querySelector('.navbar-nav');
+  if (!navbar || !navContainer) return;
+
+  // Add mobile backdrop overlay if not present
+  let overlay = document.querySelector('.navbar-mobile-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'navbar-mobile-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  // Add mobile hamburger button if not present
+  let toggleBtn = document.getElementById('navbar-toggle');
+  if (!toggleBtn) {
+    toggleBtn = document.createElement('button');
+    toggleBtn.id = 'navbar-toggle';
+    toggleBtn.className = 'navbar-toggle';
+    toggleBtn.setAttribute('aria-label', 'Toggle navigation menu');
+    toggleBtn.innerHTML = `
+      <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="20" y2="18"/>
+      </svg>
+    `;
+    navbar.appendChild(toggleBtn);
+  }
+
+  const closeMenu = () => {
+    navContainer.classList.remove('active');
+    overlay.classList.remove('active');
+    toggleBtn.innerHTML = `
+      <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="20" y2="18"/>
+      </svg>
+    `;
+  };
+
+  const openMenu = () => {
+    navContainer.classList.add('active');
+    overlay.classList.add('active');
+    toggleBtn.innerHTML = `
+      <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    `;
+  };
+
+  toggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (navContainer.classList.contains('active')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  };
+
+  overlay.onclick = closeMenu;
+
+  // Close menu when tapping any link on mobile
+  navContainer.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeMenu();
+      }
+    });
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+}
+
 // Run navbar update when document loads
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     updateNavbarAuthUI();
     initAuthGate();
+    initMobileNavbar();
   });
 }
+
