@@ -12,6 +12,18 @@ class Base(DeclarativeBase):
     pass
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    college_id = Column(String, unique=True, index=True, nullable=False)  # Student ID / Faculty ID (Username)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    user_type = Column(String, default="student")  # student, faculty, staff
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=get_ist_now)
+
+
 class Ticket(Base):
     __tablename__ = "tickets"
 
@@ -26,3 +38,6 @@ class Ticket(Base):
     urgency = Column(String)
     created_at = Column(DateTime, default=get_ist_now)
     image_url = Column(String)
+    # Submitted by student/faculty info
+    submitted_by = Column(String, nullable=True)         # User's full name
+    user_college_id = Column(String, nullable=True)      # User's college ID

@@ -4,8 +4,7 @@ from .sqlalchemy_database import SessionLocal
 from .models import Ticket
 
 
-
-def create_ticket_sqlalchemy(analysis, department, image_url=None, submission_id=None):
+def create_ticket_sqlalchemy(analysis, department, image_url=None, submission_id=None, submitted_by=None, user_college_id=None):
     
     with SessionLocal() as session:
         db_ticket = Ticket(
@@ -16,7 +15,9 @@ def create_ticket_sqlalchemy(analysis, department, image_url=None, submission_id
             problem=analysis.problem,
             urgency=analysis.urgency,
             image_url=image_url,
-            submission_id=submission_id
+            submission_id=submission_id,
+            submitted_by=submitted_by,
+            user_college_id=user_college_id
         )
 
         try:
@@ -64,7 +65,6 @@ def get_ticket_sqlalchemy(ticket_id):
         return ticket_to_dict(ticket)
 
 
-
 def get_all_tickets_sqlalchemy():
     with SessionLocal() as session:
         statement = select(Ticket).order_by(Ticket.id.desc())
@@ -76,6 +76,7 @@ def get_all_tickets_sqlalchemy():
             result.append(ticket_to_dict(ticket))
 
         return result
+
 
 def update_ticket_status_sqlalchemy(ticket_id, new_status):
     with SessionLocal() as session:
@@ -90,11 +91,9 @@ def update_ticket_status_sqlalchemy(ticket_id, new_status):
         session.commit()    
 
         return True
-        
 
 
 def ticket_to_dict(ticket):
-
     return {
         "id": ticket.id,
         "ticket_id": ticket.ticket_id,
@@ -105,8 +104,7 @@ def ticket_to_dict(ticket):
         "location": ticket.location,
         "problem": ticket.problem,
         "urgency": ticket.urgency,
-        "image_url": ticket.image_url
+        "image_url": ticket.image_url,
+        "submitted_by": ticket.submitted_by if hasattr(ticket, "submitted_by") else None,
+        "user_college_id": ticket.user_college_id if hasattr(ticket, "user_college_id") else None,
     }
-
-
-

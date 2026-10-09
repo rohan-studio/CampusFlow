@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — CampusFlow Student &amp; Faculty Portal</title>
+  <meta name="description" content="Sign in with your College ID to submit and track campus complaints." />
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══ Full-Page Auth Layout ═══════════════════════════════ -->
+  <div class="auth-page">
+    <div class="auth-blob auth-blob-1"></div>
+    <div class="auth-blob auth-blob-2"></div>
+
+    <div class="auth-card" style="max-width: 440px;">
+
+      <!-- Logo -->
+      <div class="auth-logo">
+        <img src="assets/logo.svg" alt="CampusFlow Logo" class="auth-logo-img" width="56" height="56" />
+        <h1 class="brand-name" style="font-size: 1.6rem;">Campus<span class="brand-flow">Flow</span></h1>
+        <p>Student &amp; Faculty Sign In</p>
+      </div>
+
+      <!-- Info Banner -->
+      <div style="
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        margin-bottom: 20px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      ">
+        <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary); flex-shrink:0;">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>Use your registered College ID (Student ID or Faculty ID) to sign in.</span>
+      </div>
+
+      <!-- Error Box -->
+      <div class="auth-error" id="login-error" role="alert" style="display:none; align-items:center; gap:8px;">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); flex-shrink:0;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span class="error-msg" id="login-error-text">Invalid credentials. Please try again.</span>
+      </div>
+
+      <!-- Success Box -->
+      <div class="auth-error" id="login-success" role="alert" style="display:none; align-items:center; gap:8px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success, #10b981); flex-shrink:0;">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span class="error-msg" id="login-success-text" style="color: #10b981;">Sign in successful! Redirecting…</span>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" novalidate>
+
+        <!-- College ID (Username) -->
+        <div class="form-group">
+          <label class="form-label" for="college_id">
+            College ID (Username) <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="college_id"
+            class="form-control"
+            placeholder="e.g. STU202401 or FAC9901"
+            autocomplete="username"
+            required
+            style="text-transform: uppercase;"
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="password">
+            Password <span class="required">*</span>
+          </label>
+          <div style="position:relative;">
+            <input
+              type="password"
+              id="password"
+              class="form-control"
+              placeholder="Enter your account password"
+              autocomplete="current-password"
+              required
+              style="padding-right: 48px;"
+            />
+            <button
+              type="button"
+              id="toggle-password"
+              aria-label="Toggle password visibility"
+              style="
+                position:absolute; right:12px; top:50%; transform:translateY(-50%);
+                background:none; border:none; cursor:pointer;
+                color: var(--text-muted); padding:4px; display:inline-flex; align-items:center;
+              "
+            >
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" type="submit" id="login-btn" style="margin-top:10px;">
+          <span id="login-btn-text" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Sign In
+          </span>
+        </button>
+      </form>
+
+      <!-- New Account Link -->
+      <div style="text-align:center; margin-top:20px; font-size: 0.85rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span style="color: var(--text-muted);">New campus member?</span>
+        <a href="register.html" style="color: var(--accent); font-weight: 600; display:inline-flex; align-items:center; gap:4px;">
+          Register with College ID
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Links Row -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); font-size:.82rem;">
+        <a href="index.html" style="color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          CampusFlow Home
+        </a>
+        <a href="admin-login.html" style="color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Admin Portal
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Password visibility toggle
+    const toggleBtn = document.getElementById('toggle-password');
+    const pwdInput = document.getElementById('password');
+    if (toggleBtn && pwdInput) {
+      toggleBtn.addEventListener('click', () => {
+        const isText = pwdInput.type === 'text';
+        pwdInput.type = isText ? 'password' : 'text';
+      });
+    }
+
+    // Form submit handler
+    const form = document.getElementById('login-form');
+    const submitBtn = document.getElementById('login-btn');
+    const btnText = document.getElementById('login-btn-text');
+    const errorBox = document.getElementById('login-error');
+    const errorText = document.getElementById('login-error-text');
+    const successBox = document.getElementById('login-success');
+    const successText = document.getElementById('login-success-text');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBox.style.display = 'flex';
+      successBox.style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+      successText.textContent = msg;
+      successBox.style.display = 'flex';
+      errorBox.style.display = 'none';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+
+      const collegeId = document.getElementById('college_id').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!collegeId) return showError('Please enter your College ID.');
+      if (!password) return showError('Please enter your password.');
+
+      submitBtn.disabled = true;
+      btnText.textContent = 'Signing in…';
+
+      try {
+        const result = await loginCampusUser(collegeId, password);
+
+        if (result && result.token && result.user) {
+          saveUserSession(result.token, result.user);
+          showSuccess(`Welcome back, ${result.user.name}! Redirecting…`);
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        } else {
+          showError('Invalid login response from server.');
+          submitBtn.disabled = false;
+          btnText.textContent = 'Sign In';
+        }
+      } catch (err) {
+        showError(err.message || 'Login failed. Please verify your College ID and password.');
+        submitBtn.disabled = false;
+        btnText.innerHTML = `
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Sign In
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

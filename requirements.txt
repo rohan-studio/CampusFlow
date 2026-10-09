@@ -8,4 +8,6 @@ psycopg[binary]
 psycopg2-binary
 cloudinary
 python-multipart
+passlib[bcrypt]
+python-jose[cryptography]
 

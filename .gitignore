@@ -57,3 +57,10 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Hackathon Presentation (local only - do not push to git)
+hackathon-presentation/
+presentation/
+*.pptx
+generate_presentation.py
+

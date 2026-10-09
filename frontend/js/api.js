@@ -60,10 +60,22 @@ async function submitComplaint(text, photo = null) {
     }
   }
 
+  // Attach logged-in user session token if present
+  const userToken = (typeof localStorage !== 'undefined') ? localStorage.getItem('cf_user_token') : null;
+  if (userToken) {
+    formData.append('token', userToken);
+  }
+
+  const reqHeaders = {};
+  if (userToken) {
+    reqHeaders['Authorization'] = `Bearer ${userToken}`;
+  }
+
   // NOTE: Do not set Content-Type header manually when sending FormData.
   // The browser automatically sets multipart/form-data with the correct boundary.
   const response = await fetch(`${API_BASE}/complaint`, {
     method: 'POST',
+    headers: reqHeaders,
     body: formData,
   });
 
@@ -226,4 +238,78 @@ async function adminLogin(username, password) {
     token: 'cf_session_' + Date.now(),
     username: username,
   };
+}
+
+/**
+ * Register a genuine college student/faculty member.
+ * POST /auth/register
+ * @param {Object} userData - { college_id, name, email, user_type, password }
+ * @returns {Promise<Object>} { message, user, token }
+ */
+async function registerCampusUser(userData) {
+  const response = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const msg = errorData.detail || errorData.message || `Registration error: ${response.status}`;
+    throw new Error(msg);
+  }
+
+  return response.json();
+}
+
+/**
+ * Authenticate student/faculty with College ID and password.
+ * POST /auth/login
+ * @param {string} collegeId - College ID or email
+ * @param {string} password - User password
+ * @returns {Promise<Object>} { message, user, token }
+ */
+async function loginCampusUser(collegeId, password) {
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ college_id: collegeId, password: password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const msg = errorData.detail || errorData.message || `Login error: ${response.status}`;
+    throw new Error(msg);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch currently logged in user profile using token.
+ * GET /auth/me
+ * @returns {Promise<Object>} { user }
+ */
+async function getCampusCurrentUser() {
+  const token = localStorage.getItem('cf_user_token');
+  if (!token) return null;
+
+  const response = await fetch(`${API_BASE}/auth/me`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    localStorage.removeItem('cf_user_token');
+    localStorage.removeItem('cf_user_data');
+    return null;
+  }
+
+  return response.json();
 }

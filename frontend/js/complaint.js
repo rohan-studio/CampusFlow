@@ -155,6 +155,12 @@ function displayResult(ticket) {
           <div class="result-field-value" style="font-weight: 500; color: var(--text-muted);">${date}</div>
         </div>
 
+        ${ticket.submitted_by ? `
+        <div class="result-field">
+          <div class="result-field-label">Submitted By</div>
+          <div class="result-field-value">${escapeHtml(ticket.submitted_by)} ${ticket.user_college_id ? `<span style="font-size:0.75rem; color:var(--text-muted);">(${escapeHtml(ticket.user_college_id)})</span>` : ''}</div>
+        </div>` : ''}
+
         ${ticket.problem || ticket.description ? `
         <div class="result-field" style="grid-column: 1 / -1;">
           <div class="result-field-label">Identified Problem</div>
@@ -364,6 +370,12 @@ function initComplaintForm() {
     e.preventDefault();
 
     if (!validateForm(textarea)) return;
+
+    if (typeof isUserLoggedIn === 'function' && !isUserLoggedIn()) {
+      showToast('Please sign in with your College ID before submitting a complaint.', 'error', 5000);
+      if (typeof initAuthGate === 'function') initAuthGate();
+      return;
+    }
 
     const complaintText = textarea.value.trim();
 
@@ -595,6 +607,18 @@ function openHomeModal(ticketId) {
         <div class="modal-info-label">Date Submitted</div>
         <div class="modal-info-value" style="font-weight: 500; color: var(--text-muted);">${formatDate(ticket.created_at)}</div>
       </div>
+
+      ${ticket.submitted_by ? `
+      <div class="modal-info-item" style="grid-column: 1 / -1;">
+        <div class="modal-info-label">Submitted By</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:6px;">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          ${escapeHtml(ticket.submitted_by)} ${ticket.user_college_id ? `<span style="font-size:0.78rem; color:var(--text-muted);">(${escapeHtml(ticket.user_college_id)})</span>` : ''}
+        </div>
+      </div>` : ''}
     </div>
 
     <div class="modal-problem-box">

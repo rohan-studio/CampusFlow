@@ -2,7 +2,7 @@ import os
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -17,8 +17,12 @@ from .tickets import (
     update_ticket_status_sqlalchemy,
     get_ticket_by_submission_id,
 )
-
-
+from .user_config import create_access_token, decode_access_token
+from .users import (
+    register_user_sqlalchemy,
+    authenticate_user_sqlalchemy,
+    get_user_by_college_id_sqlalchemy,
+)
 
 
 app = FastAPI()
@@ -52,6 +56,17 @@ class StatusUpdate(BaseModel):
 class ImageModeration(BaseModel):
     is_safe: bool
     reason: str
+
+class RegisterRequest(BaseModel):
+    college_id: str
+    name: str
+    email: str
+    user_type: str = "student"
+    password: str
+
+class LoginRequest(BaseModel):
+    college_id: str  # College ID or Email
+    password: str
 
 
 
@@ -178,12 +193,137 @@ def health():
 
 
 
+# ══ User Authentication Endpoints ════════════════════════════════════════
+
+@app.post("/auth/register")
+def register_user(data: RegisterRequest):
+    """
+    Register genuine college student or faculty with their college ID.
+    """
+    if not data.college_id or not data.college_id.strip():
+        raise HTTPException(status_code=400, detail="College ID is required.")
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Full Name is required.")
+    if not data.email or not data.email.strip():
+        raise HTTPException(status_code=400, detail="Email is required.")
+    if not data.password or len(data.password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters long.")
+
+    try:
+        user = register_user_sqlalchemy(
+            college_id=data.college_id,
+            name=data.name,
+            email=data.email,
+            user_type=data.user_type,
+            password=data.password
+        )
+        token = create_access_token({
+            "sub": user["college_id"],
+            "name": user["name"],
+            "email": user["email"],
+            "user_type": user["user_type"]
+        })
+        return {
+            "message": "Registration successful",
+            "user": user,
+            "token": token
+        }
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {err}")
+
+
+@app.post("/auth/login")
+def login_user(data: LoginRequest):
+    """
+    Login with College ID (unique username) or Email and Password.
+    """
+    if not data.college_id or not data.password:
+        raise HTTPException(status_code=400, detail="College ID and password are required.")
+
+    user = authenticate_user_sqlalchemy(data.college_id, data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid College ID or password. Please verify your credentials.")
+
+    token = create_access_token({
+        "sub": user["college_id"],
+        "name": user["name"],
+        "email": user["email"],
+        "user_type": user["user_type"]
+    })
+    return {
+        "message": "Login successful",
+        "user": user,
+        "token": token
+    }
+
+
+@app.get("/auth/me")
+def get_current_user(request: Request):
+    """
+    Verify user session token and return user details.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "").strip()
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired session token. Please login again.")
+
+    user = get_user_by_college_id_sqlalchemy(payload.get("sub", ""))
+    if not user:
+        # Fall back to payload info
+        user = {
+            "college_id": payload.get("sub"),
+            "name": payload.get("name"),
+            "email": payload.get("email"),
+            "user_type": payload.get("user_type", "student")
+        }
+    return {"user": user}
+
+
+
+# ══ Complaint Submission (Protected) ═════════════════════════════════════
+
 @app.post("/complaint")
 async def create_complaint(
+    request: Request,
     message: str = Form(...),
     photo: UploadFile | None = File(None),
-    submission_id: str = Form(...)
+    submission_id: str = Form(...),
+    token: str | None = Form(None)
 ):
+    # Verify genuine student/faculty auth token
+    user_token = token
+    if not user_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            user_token = auth_header.replace("Bearer ", "").strip()
+
+    submitted_by = "Campus Member"
+    user_college_id = None
+
+    if user_token:
+        payload = decode_access_token(user_token)
+        if payload:
+            submitted_by = payload.get("name", "Campus Member")
+            user_college_id = payload.get("sub")
+        else:
+            raise HTTPException(
+                status_code=401,
+                detail="Your login session has expired. Please sign in again with your College ID."
+            )
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail="Access restricted: Only verified college campus students and faculty can submit complaints. Please login with your College ID."
+        )
 
     exist_ticket = get_ticket_by_submission_id(submission_id)
 
@@ -221,7 +361,9 @@ async def create_complaint(
         analysis,
         department,
         image_url,
-        submission_id=submission_id
+        submission_id=submission_id,
+        submitted_by=submitted_by,
+        user_college_id=user_college_id
     )
 
     return {

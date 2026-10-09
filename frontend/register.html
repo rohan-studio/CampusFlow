@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — CampusFlow Student &amp; Faculty Portal</title>
+  <meta name="description" content="Register with your College ID to submit and track campus complaints." />
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══ Full-Page Auth Layout ═══════════════════════════════ -->
+  <div class="auth-page">
+    <div class="auth-blob auth-blob-1"></div>
+    <div class="auth-blob auth-blob-2"></div>
+
+    <div class="auth-card" style="max-width: 480px;">
+
+      <!-- Logo -->
+      <div class="auth-logo">
+        <img src="assets/logo.svg" alt="CampusFlow Logo" class="auth-logo-img" width="56" height="56" />
+        <h1 class="brand-name" style="font-size: 1.6rem;">Campus<span class="brand-flow">Flow</span></h1>
+        <p>Campus Member Registration</p>
+      </div>
+
+      <!-- Info Banner -->
+      <div style="
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        margin-bottom: 20px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      ">
+        <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary); flex-shrink:0;">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+        <span>Only genuine college campus students, faculty, and staff can register and submit complaints.</span>
+      </div>
+
+      <!-- Error Box -->
+      <div class="auth-error" id="register-error" role="alert" style="display:none; align-items:center; gap:8px;">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); flex-shrink:0;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span class="error-msg" id="register-error-text">Registration error.</span>
+      </div>
+
+      <!-- Success Box -->
+      <div class="auth-error" id="register-success" role="alert" style="display:none; align-items:center; gap:8px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success, #10b981); flex-shrink:0;">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span class="error-msg" id="register-success-text" style="color: #10b981;">Registration successful! Redirecting…</span>
+      </div>
+
+      <!-- Registration Form -->
+      <form id="register-form" novalidate>
+
+        <!-- College ID (Unique Username) -->
+        <div class="form-group">
+          <label class="form-label" for="college_id">
+            College ID (Your Login Username) <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="college_id"
+            class="form-control"
+            placeholder="e.g. STU202401 or FAC9901"
+            autocomplete="username"
+            required
+            style="text-transform: uppercase;"
+          />
+          <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 5px; display:flex; align-items:center; gap:5px;">
+            <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            This unique ID will be used as your username when signing in.
+          </div>
+        </div>
+
+        <!-- Full Name -->
+        <div class="form-group">
+          <label class="form-label" for="fullname">
+            Full Name <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="fullname"
+            class="form-control"
+            placeholder="e.g. Rahul Sharma"
+            autocomplete="name"
+            required
+          />
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="email">
+            Email Address <span class="required">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            placeholder="e.g. student@college.edu"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <!-- User Type -->
+        <div class="form-group">
+          <label class="form-label" for="user_type">
+            Campus Role <span class="required">*</span>
+          </label>
+          <select id="user_type" class="form-control" required style="cursor: pointer;">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty / Professor</option>
+            <option value="staff">Campus Staff</option>
+          </select>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="password">
+            Password <span class="required">*</span>
+          </label>
+          <div style="position:relative;">
+            <input
+              type="password"
+              id="password"
+              class="form-control"
+              placeholder="Create a strong password (min 4 chars)"
+              autocomplete="new-password"
+              required
+              style="padding-right: 48px;"
+            />
+            <button
+              type="button"
+              id="toggle-password"
+              aria-label="Toggle password visibility"
+              style="
+                position:absolute; right:12px; top:50%; transform:translateY(-50%);
+                background:none; border:none; cursor:pointer;
+                color: var(--text-muted); padding:4px; display:inline-flex; align-items:center;
+              "
+            >
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">
+            Confirm Password <span class="required">*</span>
+          </label>
+          <input
+            type="password"
+            id="confirm_password"
+            class="form-control"
+            placeholder="Re-enter your password"
+            autocomplete="new-password"
+            required
+          />
+        </div>
+
+        <button class="btn btn-primary btn-full" type="submit" id="register-btn" style="margin-top:12px;">
+          <span id="register-btn-text" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            Complete Registration
+          </span>
+        </button>
+      </form>
+
+      <!-- Already Registered Link -->
+      <div style="text-align:center; margin-top:20px; font-size: 0.85rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span style="color: var(--text-muted);">Already registered?</span>
+        <a href="login.html" style="color: var(--accent); font-weight: 600; display:inline-flex; align-items:center; gap:4px;">
+          Sign In with College ID
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Back Link -->
+      <div style="text-align:center; margin-top:16px;">
+        <a href="index.html" style="font-size:.82rem; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          Back to CampusFlow Home
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Password visibility toggle
+    const toggleBtn = document.getElementById('toggle-password');
+    const pwdInput = document.getElementById('password');
+    if (toggleBtn && pwdInput) {
+      toggleBtn.addEventListener('click', () => {
+        const isText = pwdInput.type === 'text';
+        pwdInput.type = isText ? 'password' : 'text';
+      });
+    }
+
+    // Form submit handler
+    const form = document.getElementById('register-form');
+    const submitBtn = document.getElementById('register-btn');
+    const btnText = document.getElementById('register-btn-text');
+    const errorBox = document.getElementById('register-error');
+    const errorText = document.getElementById('register-error-text');
+    const successBox = document.getElementById('register-success');
+    const successText = document.getElementById('register-success-text');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBox.style.display = 'flex';
+      successBox.style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+      successText.textContent = msg;
+      successBox.style.display = 'flex';
+      errorBox.style.display = 'none';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+
+      const collegeId = document.getElementById('college_id').value.trim().toUpperCase();
+      const name = document.getElementById('fullname').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const userType = document.getElementById('user_type').value;
+      const password = document.getElementById('password').value;
+      const confirmPwd = document.getElementById('confirm_password').value;
+
+      if (!collegeId) return showError('Please enter your College ID.');
+      if (!name) return showError('Please enter your full name.');
+      if (!email) return showError('Please enter your email address.');
+      if (!password) return showError('Please create a password.');
+      if (password.length < 4) return showError('Password must be at least 4 characters long.');
+      if (password !== confirmPwd) return showError('Passwords do not match. Please re-check.');
+
+      submitBtn.disabled = true;
+      btnText.textContent = 'Registering…';
+
+      try {
+        const result = await registerCampusUser({
+          college_id: collegeId,
+          name: name,
+          email: email,
+          user_type: userType,
+          password: password,
+        });
+
+        if (result && result.token && result.user) {
+          saveUserSession(result.token, result.user);
+          showSuccess(`Welcome, ${result.user.name}! Registered with ID: ${result.user.college_id}. Redirecting…`);
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1200);
+        } else {
+          showSuccess('Registration complete! Please log in.');
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 1200);
+        }
+      } catch (err) {
+        showError(err.message || 'Registration failed. Please try again.');
+        submitBtn.disabled = false;
+        btnText.innerHTML = `
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/>
+            <line x1="22" y1="11" x2="16" y2="11"/>
+          </svg>
+          Complete Registration
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
