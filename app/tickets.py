@@ -5,8 +5,7 @@ from .models import Ticket
 
 
 
-def create_ticket_sqlalchemy(analysis, department):
-
+def create_ticket_sqlalchemy(analysis, department, image_url=None, submission_id=None):
     
     with SessionLocal() as session:
         db_ticket = Ticket(
@@ -15,7 +14,9 @@ def create_ticket_sqlalchemy(analysis, department):
             category=analysis.category,
             location=analysis.location,
             problem=analysis.problem,
-            urgency=analysis.urgency
+            urgency=analysis.urgency,
+            image_url=image_url,
+            submission_id=submission_id
         )
 
         try:
@@ -28,18 +29,28 @@ def create_ticket_sqlalchemy(analysis, department):
             db_ticket.ticket_id = ticket_id
     
             session.commit()
+            session.refresh(db_ticket)
 
             result_ticket = ticket_to_dict(db_ticket)
         except Exception:
             session.rollback()
             raise
 
-        
-
-        
-
     return result_ticket
 
+
+def get_ticket_by_submission_id(submission_id):
+    with SessionLocal() as session:
+        statement = select(Ticket).where(
+            Ticket.submission_id == submission_id
+        )
+
+        ticket = session.scalars(statement).first()
+
+        if not ticket:
+            return None
+
+        return ticket_to_dict(ticket)
 
 
 def get_ticket_sqlalchemy(ticket_id):
@@ -56,7 +67,7 @@ def get_ticket_sqlalchemy(ticket_id):
 
 def get_all_tickets_sqlalchemy():
     with SessionLocal() as session:
-        statement = select(Ticket)
+        statement = select(Ticket).order_by(Ticket.id.desc())
         tickets = session.scalars(statement).all()
 
         result = []
@@ -87,12 +98,15 @@ def ticket_to_dict(ticket):
     return {
         "id": ticket.id,
         "ticket_id": ticket.ticket_id,
+        "created_at": (ticket.created_at.isoformat() + "+05:30") if ticket.created_at else None,
         "status": ticket.status,
         "department": ticket.department,
         "category": ticket.category,
         "location": ticket.location,
         "problem": ticket.problem,
-        "urgency": ticket.urgency
+        "urgency": ticket.urgency,
+        "image_url": ticket.image_url
     }
+
 
 

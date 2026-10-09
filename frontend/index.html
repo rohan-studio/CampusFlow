@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusFlow — Campus Complaint Management</title>
   <meta name="description" content="Submit and track campus complaints quickly and easily with CampusFlow." />
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -12,14 +13,18 @@
   <!-- ══ Navbar ══════════════════════════════════════════════ -->
   <nav class="navbar">
     <a class="navbar-brand" href="index.html">
-      <div class="brand-icon">🎓</div>
-      CampusFlow
+      <img src="assets/logo.svg" alt="CampusFlow Logo" class="brand-logo-img" width="36" height="36" />
+      <span class="brand-name">Campus<span class="brand-flow">Flow</span></span>
     </a>
     <div class="navbar-nav">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#submit" class="nav-link">Submit Complaint</a>
-      <a href="#complaints" class="nav-link">All Complaints</a>
-      <a href="admin-login.html" class="btn-nav-admin">Admin Portal 🔐</a>
+      <a href="#recent-complaints" class="nav-link">Recent Issues</a>
+      <a href="complaints.html" class="nav-link">All Complaints</a>
+      <a href="admin-login.html" class="btn-nav-admin">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Admin Portal
+      </a>
     </div>
   </nav>
 
@@ -27,213 +32,255 @@
   <section class="hero" id="home">
     <div class="hero-blob hero-blob-1"></div>
     <div class="hero-blob hero-blob-2"></div>
-    <div class="hero-content">
+    <div class="hero-content" style="max-width: 760px;">
       <div class="hero-badge">
-        <span>🎓</span> CampusFlow
+        <img src="assets/logo.svg" alt="" width="16" height="16" style="border-radius:4px; margin-right:4px;" />
+        AI-Powered Smart Campus Resolution
       </div>
       <h1>
         Your Voice,<br />
         <span>Heard &amp; Resolved</span>
       </h1>
-      <p>
+      <p style="margin-bottom: 28px;">
         Submit campus complaints in seconds. Our AI-powered system categorizes,
         prioritizes, and routes your issue to the right department automatically.
       </p>
-      <a href="#submit" class="btn btn-primary" style="font-size:1rem; padding: 14px 36px;">
-        📝 Submit a Complaint
-      </a>
+
+      <!-- ══ Complaint Form Card (Inside Hero) ═════════════════ -->
+      <div class="complaint-wrapper" id="submit" style="text-align: left; max-width: 680px; margin: 0 auto;">
+        <div class="complaint-card">
+          <div class="complaint-card-header">
+            <h2>Submit a Complaint</h2>
+            <p>Describe your issue and we'll take care of the rest.</p>
+          </div>
+          <div class="complaint-card-body">
+            <form id="complaint-form" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="complaint-text">
+                  Describe Your Complaint <span class="required">*</span>
+                </label>
+                <textarea
+                  id="complaint-text"
+                  class="form-control"
+                  placeholder="E.g. The projector in Room 301 has been broken for two weeks and no one has fixed it…"
+                  maxlength="2000"
+                  rows="5"
+                ></textarea>
+                <div class="form-hint">
+                  <span id="char-count">0</span>/2000 characters — minimum 20 required
+                </div>
+                <div class="form-error" id="complaint-error">
+                  Please describe your complaint (minimum 20 characters).
+                </div>
+              </div>
+
+              <!-- ══ Photo Attachment (optional) ════════════════ -->
+              <div class="form-group" id="photo-section">
+                <label class="form-label">
+                  <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                  Attach a Photo <span style="font-weight:400;color:var(--text-muted)">(optional — helps us understand the issue faster)</span>
+                </label>
+
+                <div id="camera-controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                  <!-- Camera Button: Visible ONLY for mobile & tablet users -->
+                  <label class="btn btn-secondary mobile-tablet-only" id="open-camera-label" for="camera-native-input" style="gap:8px;padding:9px 18px;font-size:.85rem;cursor:pointer;margin:0;align-items:center;">
+                    <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                    <span>Open Camera</span>
+                  </label>
+                  <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;" />
+
+                  <!-- Gallery / File Upload Button: Visible on all devices (PC, tablet, mobile) -->
+                  <label class="btn btn-secondary" id="upload-file-label" for="file-input" style="gap:8px;padding:9px 18px;font-size:.85rem;cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                    <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                    <span>Choose from Gallery</span>
+                  </label>
+                  <input type="file" id="file-input" accept="image/*" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;" />
+
+                  <button type="button" class="btn btn-secondary" id="remove-photo-btn" style="display:none;gap:6px;padding:9px 14px;font-size:.82rem;color:#e53e3e;border-color:#e53e3e;">
+                    <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    Remove Photo
+                  </button>
+                </div>
+
+                <!-- Photo Preview -->
+                <div id="photo-preview-wrap" style="display:none;margin-top:14px;border-radius:var(--radius);overflow:hidden;border:2px solid var(--primary);position:relative;">
+                  <img id="photo-preview-img" src="" alt="Complaint photo" style="width:100%;max-height:260px;object-fit:cover;display:block;" />
+                  <div style="position:absolute;top:8px;right:8px;">
+                    <span style="background:var(--primary);color:#fff;font-size:.75rem;padding:3px 10px;border-radius:20px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                      <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg>
+                      Photo attached
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Hidden canvas for capture -->
+                <canvas id="capture-canvas" style="display:none;"></canvas>
+              </div>
+
+              <button class="btn btn-primary btn-full" type="submit" id="submit-btn" style="min-height: 48px;">
+                <span id="btn-text">
+                  Submit Complaint
+                  <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:#fff;margin-left:4px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </span>
+              </button>
+            </form>
+
+            <!-- Result Display -->
+            <div class="result-area" id="result-area"></div>
+          </div>
+        </div>
+
+        <!-- Quick Tips Bar -->
+        <div style="
+          margin-top: 14px;
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(8px);
+          border-radius: var(--radius);
+          padding: 12px 18px;
+          border: 1px solid rgba(255,255,255,0.2);
+          color: rgba(255,255,255,0.9);
+          font-size: .82rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        ">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="color:#fbbf24;fill:rgba(251,191,36,0.2);"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          <span><strong>Tip:</strong> Mention specific room numbers or campus locations for fastest resolution.</span>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- ══ Stats Bar ════════════════════════════════════════════ -->
   <div class="stats-bar">
     <div class="stat-item">
-      <div class="stat-number">{{ resolved_count }}</div>
-      <div class="stat-label">✅ Resolved</div>
+      <div class="stat-number" id="home-stat-resolved">0</div>
+      <div class="stat-label">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" style="color:#10b981;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Resolved
+      </div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-number">{{ pending_count }}</div>
-      <div class="stat-label">⏳ Pending</div>
+      <div class="stat-number" id="home-stat-pending">0</div>
+      <div class="stat-label">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" style="color:#f59e0b;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Pending
+      </div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-number">{{ dept_count }}</div>
-      <div class="stat-label">🏫 Departments</div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-number">{{ satisfaction }}%</div>
-      <div class="stat-label">⚡ Resolution Rate</div>
+      <div class="stat-number" id="home-stat-depts">0</div>
+      <div class="stat-label">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" style="color:#6366f1;"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v8h4"/><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+        Departments
+      </div>
     </div>
   </div>
 
+  <!-- ══ Recent Campus Complaints ══════════════════════════════ -->
+  <section class="section" id="recent-complaints" style="background: var(--bg); padding-top: 60px; padding-bottom: 80px;">
+    <div class="section-container" style="max-width: 1140px; margin: 0 auto; padding: 0 20px;">
+      <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+        <span class="eyebrow">Campus Transparency</span>
+        <h2>Recent Campus Complaints</h2>
+        <p>Live feed of reported issues across campus and their current resolution status.</p>
+      </div>
+
+      <!-- Complaints Table / List Container -->
+      <div id="home-complaints-container">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3>Loading complaints…</h3>
+          <p>Fetching latest campus updates…</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons: Show More & Show All -->
+      <div class="complaints-actions-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:28px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="show-more-btn" style="display:none; padding: 12px 28px; font-size:.9rem; font-weight:600;">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          Show More (<span id="showing-count">5</span> / <span id="total-count">0</span>)
+        </button>
+        <a href="complaints.html" class="btn btn-primary" id="show-all-btn" style="padding: 12px 28px; font-size:.9rem; font-weight:600;">
+          Show All Complaints
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" style="stroke:#fff;margin-left:4px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ How It Works ════════════════════════════════════════ -->
-  <section class="section" id="how-it-works" style="background: var(--bg); padding-top: 100px;">
-    <div class="section-header">
-      <span class="eyebrow">Simple Process</span>
-      <h2>How CampusFlow Works</h2>
-      <p>Three easy steps to get your campus issue resolved fast.</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <span class="step-number">1</span>
-        <div class="step-icon">📝</div>
-        <div class="step-title">Describe Your Issue</div>
-        <p class="step-desc">
-          Write about your campus problem in plain language — anything from
-          maintenance issues to academic concerns.
-        </p>
+  <section class="section" id="how-it-works" style="background: #ffffff; padding: 70px 20px;">
+    <div class="section-container" style="max-width: 1000px; margin: 0 auto;">
+      <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+        <span class="eyebrow">Simple Workflow</span>
+        <h2>How CampusFlow Works</h2>
+        <p>Three straightforward steps from submitting your problem to verified resolution.</p>
       </div>
-      <div class="step-card">
-        <span class="step-number">2</span>
-        <div class="step-icon">✅</div>
-        <div class="step-title">Auto-Categorized by AI</div>
-        <p class="step-desc">
-          Our system instantly classifies your complaint, assigns urgency,
-          and routes it to the correct department.
-        </p>
-      </div>
-      <div class="step-card">
-        <span class="step-number">3</span>
-        <div class="step-icon">🔍</div>
-        <div class="step-title">Track &amp; Get Resolved</div>
-        <p class="step-desc">
-          Receive a unique ticket ID. Admin reviews and resolves your complaint
-          — you get notified every step of the way.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ Complaint Form ═══════════════════════════════════════ -->
-  <section class="complaint-section" id="submit">
-    <div class="complaint-wrapper">
-      <div class="complaint-card">
-        <div class="complaint-card-header">
-          <h2>📝 Submit a Complaint</h2>
-          <p>Describe your issue and we'll take care of the rest.</p>
-        </div>
-        <div class="complaint-card-body">
-          <form id="complaint-form" novalidate>
-            <div class="form-group">
-              <label class="form-label" for="complaint-text">
-                Describe Your Complaint <span class="required">*</span>
-              </label>
-              <textarea
-                id="complaint-text"
-                class="form-control"
-                placeholder="E.g. The projector in Room 301 has been broken for two weeks and no one has fixed it…"
-                maxlength="2000"
-                rows="6"
-              ></textarea>
-              <div class="form-hint">
-                <span id="char-count">0</span>/2000 characters — minimum 20 required
-              </div>
-              <div class="form-error" id="complaint-error">
-                Please describe your complaint (minimum 20 characters).
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-full" type="submit" id="submit-btn">
-              <span id="btn-text">Submit Complaint 🚀</span>
-            </button>
-          </form>
-
-          <!-- Result Display -->
-          <div class="result-area" id="result-area"></div>
-        </div>
-      </div>
-
-      <!-- Tips Card -->
-      <div style="
-        margin-top: 20px;
-        background: linear-gradient(135deg, #ede9fe, #e0f2fe);
-        border-radius: var(--radius-lg);
-        padding: 20px 24px;
-        border: 1px solid rgba(79,70,229,.15);
-      ">
-        <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px;">
-          💡 Tips for a Great Complaint
-        </div>
-        <ul style="font-size:.875rem; color: var(--text-muted); line-height:2; padding-left:16px; list-style:disc;">
-          <li>Be specific — mention the location, time, and people involved.</li>
-          <li>Describe the impact — how does it affect you or others?</li>
-          <li>Keep it factual and respectful for fastest resolution.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ All Complaints Cards Section ════════════════════════ -->
-  <section class="section" id="complaints" style="background: var(--bg); padding: 80px 5vw 100px;">
-    <div class="section-header" style="text-align: center; margin-bottom: 36px;">
-      <span class="eyebrow">Real-Time Tracker</span>
-      <h2>📋 All Campus Complaints</h2>
-      <p>Browse campus complaints in real time. Click any card to view full details.</p>
-    </div>
-
-    <div style="max-width: 960px; margin: 0 auto;">
-      <div class="tickets-grid" id="public-tickets-grid">
-        {% if tickets %}
-          {% for ticket in tickets %}
-          <div class="ticket-card clickable urgency-{{ (ticket.urgency or 'medium').lower().split()[0] }} {% if (ticket.status or '').lower() == 'resolved' %}resolved{% endif %}"
-               data-ticket='{{ ticket | tojson }}'
-               onclick="openTicketDetails(JSON.parse(this.dataset.ticket))"
-               style="cursor: pointer;">
-            <div>
-              <div class="ticket-meta">
-                <span class="ticket-id">#{{ ticket.ticket_id or ticket.id }}</span>
-                <span class="badge {% if (ticket.status or '').lower() == 'resolved' %}badge-resolved{% else %}badge-pending{% endif %}">
-                  {% if (ticket.status or '').lower() == 'resolved' %}✅{% else %}⏳{% endif %} {{ ticket.status or 'Pending' }}
-                </span>
-                <span class="badge badge-accent">
-                  🏫 {{ ticket.department or 'General' }}
-                </span>
-                {% if ticket.urgency %}
-                <span class="badge {% if 'high' in ticket.urgency.lower() %}badge-high{% elif 'medium' in ticket.urgency.lower() %}badge-medium{% else %}badge-low{% endif %}">
-                  ⚡ {{ ticket.urgency }}
-                </span>
-                {% endif %}
-              </div>
-              <p class="ticket-description" style="font-weight: 500; margin: 8px 0 12px; font-size: .95rem;">
-                {{ ticket.problem or ticket.description or 'No description provided.' }}
-              </p>
-              <div class="ticket-footer" style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size: .82rem; color: var(--text-muted);">
-                  📍 <strong>Location:</strong> {{ ticket.location or 'Campus' }} • 🏷️ <strong>Category:</strong> {{ ticket.category or 'General' }}
-                </span>
-                <span style="font-size: .82rem; color: var(--accent); font-weight: 600;">
-                  Click for details ➔
-                </span>
-              </div>
-            </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-number">1</span>
+          <div class="step-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
           </div>
-          {% endfor %}
-        {% else %}
-          <div class="empty-state">
-            <span class="empty-icon">🎉</span>
-            <h3>No Complaints Found</h3>
-            <p>All complaints are resolved or none have been submitted yet.</p>
+          <div class="step-title">Describe Your Issue</div>
+          <p class="step-desc">
+            Write about your campus problem in natural language — from broken equipment to Wi-Fi drops.
+          </p>
+        </div>
+        <div class="step-card">
+          <span class="step-number">2</span>
+          <div class="step-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.5 2.1-1.3 2.8l-.7.7V11h-4V9.5l-.7-.7A4 4 0 0 1 12 2z"/><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="8" cy="16" r="1"/><circle cx="16" cy="16" r="1"/></svg>
           </div>
-        {% endif %}
+          <div class="step-title">AI Powered Routing</div>
+          <p class="step-desc">
+            CampusFlow classifies the issue, evaluates its urgency, and directs it to the right team.
+          </p>
+        </div>
+        <div class="step-card">
+          <span class="step-number">3</span>
+          <div class="step-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="step-title">Track to Resolution</div>
+          <p class="step-desc">
+            Get an instant ticket ID. The administration team reviews and marks the issue resolved.
+          </p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ══ Complaint Detail Modal ════════════════════════════════ -->
-  <div class="modal-overlay" id="ticket-modal">
-    <div class="modal" style="max-width: 560px; position: relative;">
-      <button onclick="closeTicketModal()" style="position: absolute; top: 16px; right: 18px; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; border: none; background: none; line-height: 1;" aria-label="Close">✕</button>
-      <div id="modal-details-content"></div>
+  <!-- ══ Ticket Detail Modal Popup ════════════════════════════ -->
+  <div class="modal-overlay" id="home-modal-overlay">
+    <div class="modal modal-detail" id="home-modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 id="home-modal-ticket-id">Ticket Details</h2>
+          <span id="home-modal-ticket-status"></span>
+        </div>
+        <button class="modal-close-btn" id="home-modal-close-btn" aria-label="Close modal">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="home-modal-body">
+        <!-- Dynamically populated by complaint.js -->
+      </div>
+      <div class="modal-footer" id="home-modal-footer">
+        <button class="btn btn-secondary" id="home-modal-close-action">Close</button>
+      </div>
     </div>
   </div>
 
   <!-- ══ Footer ══════════════════════════════════════════════ -->
   <footer class="footer">
-    <p>
-      © 2025 <strong>CampusFlow</strong> — Campus Complaint Management System.
-      Built with ❤️ for students.
+    <p style="display:flex; align-items:center; justify-content:center; gap:8px;">
+      <img src="assets/logo.svg" alt="" width="20" height="20" style="border-radius:5px;" />
+      <span>© 2025 <strong class="brand-name">Campus<span class="brand-flow">Flow</span></strong> — Smart Campus Operations Pipeline</span>
     </p>
     <p style="margin-top:6px;">
       <a href="admin-login.html">Admin Portal</a>
@@ -243,84 +290,5 @@
   <!-- ══ Scripts ═════════════════════════════════════════════ -->
   <script src="js/api.js"></script>
   <script src="js/complaint.js"></script>
-  <script>
-    function openTicketDetails(ticket) {
-      const modal = document.getElementById('ticket-modal');
-      const content = document.getElementById('modal-details-content');
-      if (!modal || !content) return;
-
-      const isResolved = (ticket.status || '').toLowerCase() === 'resolved';
-      const statusBadge = `<span class="badge ${isResolved ? 'badge-resolved' : 'badge-pending'}">${isResolved ? '✅' : '⏳'} ${ticket.status || 'Pending'}</span>`;
-      const urgencyKey = (ticket.urgency || 'Normal').toLowerCase();
-      let urgencyBadgeClass = 'badge-accent';
-      if (urgencyKey.includes('high')) urgencyBadgeClass = 'badge-high';
-      else if (urgencyKey.includes('medium')) urgencyBadgeClass = 'badge-medium';
-      else if (urgencyKey.includes('low')) urgencyBadgeClass = 'badge-low';
-      const urgencyBadge = `<span class="badge ${urgencyBadgeClass}">⚡ ${ticket.urgency || 'Normal'}</span>`;
-
-      content.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-          <span class="ticket-id" style="font-size: 1rem; padding: 4px 12px;">#${ticket.ticket_id || ticket.id}</span>
-          ${statusBadge}
-          ${urgencyBadge}
-        </div>
-
-        <h3 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 14px; font-weight: 700;">
-          Complaint Details
-        </h3>
-
-        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 20px;">
-          <div style="font-size: .75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-            Problem Description
-          </div>
-          <p style="font-size: .95rem; color: var(--text); line-height: 1.6; margin: 0;">
-            ${ticket.problem || ticket.description || 'No description provided.'}
-          </p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <div class="result-field">
-            <div class="result-field-label">Department</div>
-            <div class="result-field-value">🏫 ${ticket.department || 'General Administration'}</div>
-          </div>
-          <div class="result-field">
-            <div class="result-field-label">Category</div>
-            <div class="result-field-value">🏷️ ${ticket.category || 'General'}</div>
-          </div>
-          <div class="result-field">
-            <div class="result-field-label">Location</div>
-            <div class="result-field-value">📍 ${ticket.location || 'Campus'}</div>
-          </div>
-          <div class="result-field">
-            <div class="result-field-label">Status</div>
-            <div class="result-field-value">${ticket.status || 'Pending'}</div>
-          </div>
-        </div>
-
-        <button onclick="closeTicketModal()" class="btn btn-primary btn-full" style="margin-top: 24px;">
-          Close Details
-        </button>
-      `;
-
-      modal.classList.add('visible');
-    }
-
-    function closeTicketModal() {
-      const modal = document.getElementById('ticket-modal');
-      if (modal) modal.classList.remove('visible');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const modal = document.getElementById('ticket-modal');
-      if (modal) {
-        modal.addEventListener('click', (e) => {
-          if (e.target === modal) closeTicketModal();
-        });
-      }
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeTicketModal();
-      });
-    });
-  </script>
 </body>
 </html>

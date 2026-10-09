@@ -16,7 +16,11 @@ function showToast(message, type = 'info', duration = 4000) {
     document.body.appendChild(container);
   }
 
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const icons = {
+    success: '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg>',
+    error:   '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--danger);"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info:    '<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:var(--primary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  };
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
@@ -37,28 +41,54 @@ function showToast(message, type = 'info', duration = 4000) {
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleString('en-IN', {
+    let s = String(dateStr).trim();
+    if (s.includes(' ') && !s.includes('T')) {
+      s = s.replace(' ', 'T');
+    }
+    if (!s.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(s)) {
+      s += 'Z';
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('en-IN', {
       dateStyle: 'medium', timeStyle: 'short',
     });
   } catch { return dateStr; }
 }
 
+function normalizeUrgency(urgency) {
+  if (!urgency) return 'Low';
+  const u = String(urgency).toLowerCase().trim();
+  if (u.includes('high') || u.includes('urgent') || u.includes('critical')) return 'High';
+  if (u.includes('med')) return 'Medium';
+  if (u.includes('low')) return 'Low';
+  return 'Low';
+}
+
 const URGENCY_CONFIG = {
-  High:   { badgeClass: 'badge-high',   icon: '🔴' },
-  Medium: { badgeClass: 'badge-medium', icon: '🟡' },
-  Low:    { badgeClass: 'badge-low',    icon: '🟢' },
+  High:   { badgeClass: 'badge-high',   dotClass: 'dot-high' },
+  Medium: { badgeClass: 'badge-medium', dotClass: 'dot-medium' },
+  Low:    { badgeClass: 'badge-low',    dotClass: 'dot-low' },
 };
 
 function urgencyBadge(urgency) {
-  const cfg = URGENCY_CONFIG[urgency] || { badgeClass: 'badge-accent', icon: '⚪' };
-  return `<span class="badge ${cfg.badgeClass}">${cfg.icon} ${urgency || 'Unknown'}</span>`;
+  const norm = normalizeUrgency(urgency);
+  const cfg = URGENCY_CONFIG[norm] || { badgeClass: 'badge-low', dotClass: 'dot-low' };
+  return `<span class="badge ${cfg.badgeClass}"><span class="dot ${cfg.dotClass}"></span>${norm}</span>`;
 }
 
 function statusBadge(status) {
-  const resolved = status?.toLowerCase() === 'resolved';
-  return `<span class="badge ${resolved ? 'badge-resolved' : 'badge-pending'}">
-    ${resolved ? '✅' : '⏳'} ${status || 'Pending'}
-  </span>`;
+  const s = String(status || 'Pending').trim();
+  const isResolved = s.toLowerCase() === 'resolved';
+  const isInProgress = s.toLowerCase().includes('progress');
+
+  if (isResolved) {
+    return `<span class="badge badge-resolved"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>`;
+  }
+  if (isInProgress) {
+    return `<span class="badge badge-inprogress"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--info);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> In Progress</span>`;
+  }
+  return `<span class="badge badge-pending"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending</span>`;
 }
 
 /* ─────────────────────────────────────────────────────────── */
@@ -122,6 +152,7 @@ function initLoginPage() {
 let allTickets = [];
 let activeStatusFilter  = 'all';
 let activeUrgencyFilter = 'all';
+let currentView = 'table'; // 'table' or 'cards'
 
 function initDashboardPage() {
   /* Auth guard */
@@ -142,6 +173,26 @@ function initDashboardPage() {
       sessionStorage.removeItem('cf_token');
       sessionStorage.removeItem('cf_username');
       window.location.href = 'admin-login.html';
+    });
+  }
+
+  /* View switchers */
+  const viewTableBtn = document.getElementById('view-table-btn');
+  const viewCardsBtn = document.getElementById('view-cards-btn');
+
+  if (viewTableBtn && viewCardsBtn) {
+    viewTableBtn.addEventListener('click', () => {
+      currentView = 'table';
+      viewTableBtn.classList.add('active');
+      viewCardsBtn.classList.remove('active');
+      renderTickets();
+    });
+
+    viewCardsBtn.addEventListener('click', () => {
+      currentView = 'cards';
+      viewCardsBtn.classList.add('active');
+      viewTableBtn.classList.remove('active');
+      renderTickets();
     });
   }
 
@@ -169,6 +220,24 @@ function initDashboardPage() {
   const refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) refreshBtn.addEventListener('click', fetchTickets);
 
+  /* Modal Close Listeners */
+  const modalOverlay = document.getElementById('ticket-modal-overlay');
+  const modalCloseBtn = document.getElementById('modal-close-btn');
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', closeTicketModal);
+  }
+
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeTicketModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTicketModal();
+  });
+
   fetchTickets();
 }
 
@@ -182,13 +251,20 @@ async function fetchTickets() {
 
   try {
     allTickets = await getAllTickets();
+    allTickets.sort((a, b) => {
+      if (a.created_at && b.created_at) {
+        const timeDiff = new Date(b.created_at) - new Date(a.created_at);
+        if (timeDiff !== 0) return timeDiff;
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
     updateDashStats();
     renderTickets();
   } catch (err) {
     console.error('Failed to fetch tickets:', err);
     grid.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">⚠️</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
         <h3>Could not load tickets</h3>
         <p>${err.message || 'Please check your connection and try again.'}</p>
       </div>`;
@@ -202,7 +278,7 @@ function updateDashStats() {
   const total    = allTickets.length;
   const pending  = allTickets.filter(t => t.status?.toLowerCase() !== 'resolved').length;
   const resolved = allTickets.filter(t => t.status?.toLowerCase() === 'resolved').length;
-  const high     = allTickets.filter(t => t.urgency?.toLowerCase() === 'high').length;
+  const high     = allTickets.filter(t => normalizeUrgency(t.urgency) === 'High').length;
 
   setEl('stat-total',    total);
   setEl('stat-pending',  pending);
@@ -224,49 +300,148 @@ function getFilteredTickets() {
 
     const urgencyMatch =
       activeUrgencyFilter === 'all' ||
-      ticket.urgency?.toLowerCase() === activeUrgencyFilter.toLowerCase();
+      normalizeUrgency(ticket.urgency).toLowerCase() === activeUrgencyFilter.toLowerCase();
 
     return statusMatch && urgencyMatch;
   });
 }
 
 function renderTickets() {
-  const grid = document.getElementById('tickets-grid');
-  if (!grid) return;
+  const container = document.getElementById('tickets-grid');
+  if (!container) return;
 
   const filtered = getFilteredTickets();
 
   if (filtered.length === 0) {
-    grid.innerHTML = `
+    container.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🎉</span>
+        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
         <h3>No tickets found!</h3>
         <p>There are no tickets matching the current filter.</p>
       </div>`;
     return;
   }
 
-  grid.innerHTML = filtered.map(ticket => buildTicketCard(ticket)).join('');
+  if (currentView === 'table') {
+    container.innerHTML = buildTicketTable(filtered);
 
-  /* Attach resolve button listeners */
-  grid.querySelectorAll('[data-resolve-id]').forEach(btn => {
-    btn.addEventListener('click', () => handleResolve(btn.dataset.resolveId, btn));
-  });
+    /* Row click -> open modal */
+    container.querySelectorAll('.ticket-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-resolve-id]')) return; // ignore resolve button click
+        openTicketModal(row.dataset.ticketId);
+      });
+    });
+
+    /* Attach direct resolve button listeners */
+    container.querySelectorAll('[data-resolve-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleResolve(btn.dataset.resolveId, btn);
+      });
+    });
+
+  } else {
+    /* Cards View */
+    container.innerHTML = `
+      <div class="tickets-grid">
+        ${filtered.map(ticket => buildTicketCard(ticket)).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll('.ticket-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-resolve-id]')) return;
+        openTicketModal(card.dataset.ticketId);
+      });
+    });
+
+    container.querySelectorAll('[data-resolve-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleResolve(btn.dataset.resolveId, btn);
+      });
+    });
+  }
+}
+
+function buildTicketTable(tickets) {
+  return `
+    <div class="table-responsive">
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>Ticket ID</th>
+            <th>Problem Summary</th>
+            <th>Category</th>
+            <th>Department</th>
+            <th>Location</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th style="text-align: right; width: 100px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tickets.map(t => {
+            const isResolved = t.status?.toLowerCase() === 'resolved';
+            const urgencyKey = t.urgency || 'Low';
+            const rawDesc    = t.problem || t.description || 'No description provided';
+            const shortDesc  = rawDesc.length > 55 ? rawDesc.slice(0, 55) + '…' : rawDesc;
+            const displayId  = t.ticket_id || `#${t.id}`;
+            const targetId   = t.ticket_id || t.id;
+            const hasPhoto   = Boolean(t.image_url);
+
+            return `
+              <tr class="ticket-row ${isResolved ? 'resolved' : ''}" data-ticket-id="${targetId}" title="Click row to view full details">
+                <td><span class="ticket-id-badge">${displayId}</span></td>
+                <td>
+                  <div class="table-problem-text" title="${escapeHtml(rawDesc)}">
+                    ${hasPhoto ? '<span title="Photo attached" style="margin-right:4px;display:inline-flex;align-items:center;vertical-align:middle;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>' : ''}
+                    ${escapeHtml(shortDesc)}
+                  </div>
+                </td>
+                <td><span class="badge badge-accent">${escapeHtml(t.category || 'General')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(t.department || '—')}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(t.location || '—')}</span></td>
+                <td>${urgencyBadge(urgencyKey)}</td>
+                <td>${statusBadge(t.status)}</td>
+                <td style="text-align: right;">
+                  ${!isResolved ? `
+                    <button class="btn btn-success btn-sm" data-resolve-id="${targetId}" title="Mark as Resolved" style="display:inline-flex;align-items:center;gap:4px;">
+                      <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Resolve
+                    </button>
+                  ` : '<span class="badge badge-resolved" style="font-size: .7rem; padding: 2px 8px;">Resolved</span>'}
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function buildTicketCard(ticket) {
   const isResolved = ticket.status?.toLowerCase() === 'resolved';
-  const urgencyKey = ticket.urgency || 'Low';
-  const shortDesc  = ticket.description
-    ? ticket.description.slice(0, 160) + (ticket.description.length > 160 ? '…' : '')
+  const urgencyKey = normalizeUrgency(ticket.urgency);
+  const rawDesc    = ticket.problem || ticket.description || '';
+  const shortDesc  = rawDesc
+    ? rawDesc.slice(0, 160) + (rawDesc.length > 160 ? '…' : '')
     : 'No description provided.';
+  const displayId  = ticket.ticket_id || `#${ticket.id}`;
+  const resolveTargetId = ticket.ticket_id || ticket.id;
+  const hasPhoto   = Boolean(ticket.image_url);
 
   return `
     <div class="ticket-card urgency-${urgencyKey.toLowerCase()} ${isResolved ? 'resolved' : ''}"
-         id="ticket-${ticket.id}">
+         data-ticket-id="${resolveTargetId}"
+         id="ticket-${resolveTargetId}"
+         style="cursor: pointer;"
+         title="Click card to view details">
       <div>
         <div class="ticket-meta">
-          <span class="ticket-id">#${ticket.id}</span>
+          <span class="ticket-id">${displayId}</span>
+          ${hasPhoto ? '<span class="badge badge-accent" style="font-size:.7rem; padding:2px 8px; display:inline-flex; align-items:center; gap:3px;"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Photo</span>' : ''}
           ${urgencyBadge(urgencyKey)}
           ${statusBadge(ticket.status)}
           <span class="ticket-date">${formatDate(ticket.created_at)}</span>
@@ -275,10 +450,14 @@ function buildTicketCard(ticket) {
         <p class="ticket-description">${escapeHtml(shortDesc)}</p>
 
         <div class="ticket-footer">
-          <span class="ticket-dept">🏫 ${ticket.department || 'Unknown Dept.'}</span>
+          <span class="ticket-dept" style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${ticket.department || 'Unknown Dept.'}</span>
           <span class="badge badge-accent" style="margin-left:4px;">
             ${ticket.category || 'General'}
           </span>
+          ${ticket.location ? `
+          <span class="badge" style="margin-left:4px; background: rgba(0,0,0,0.06); color: var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+            <svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(ticket.location)}
+          </span>` : ''}
         </div>
       </div>
 
@@ -286,42 +465,183 @@ function buildTicketCard(ticket) {
         ${!isResolved ? `
           <button
             class="btn btn-success btn-sm"
-            data-resolve-id="${ticket.id}"
+            data-resolve-id="${resolveTargetId}"
             title="Mark as Resolved"
-          >✔ Resolve</button>
+            style="display:inline-flex;align-items:center;gap:4px;"
+          ><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Resolve</button>
         ` : `
-          <span class="badge badge-resolved">✅ Resolved</span>
+          <span class="badge badge-resolved"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>
         `}
       </div>
     </div>
   `;
 }
 
-async function handleResolve(ticketId, btn) {
+/* ── Modal Details Popup ──────────────────────────────────── */
+function openTicketModal(ticketId) {
+  const ticket = allTickets.find(t =>
+    String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
+  );
+
+  if (!ticket) return;
+
+  const overlay    = document.getElementById('ticket-modal-overlay');
+  const titleEl    = document.getElementById('modal-ticket-id');
+  const statusEl   = document.getElementById('modal-ticket-status');
+  const bodyEl     = document.getElementById('modal-body');
+  const footerEl   = document.getElementById('modal-footer');
+
+  if (!overlay || !bodyEl) return;
+
+  const displayId  = ticket.ticket_id || `#${ticket.id}`;
+  const statusLower = (ticket.status || 'pending').toLowerCase();
+  const isResolved = statusLower === 'resolved';
+  const isInProgress = statusLower.includes('progress');
+  const targetId   = ticket.ticket_id || ticket.id;
+
+  if (titleEl) titleEl.textContent = `Ticket Details — ${displayId}`;
+  if (statusEl) statusEl.innerHTML = statusBadge(ticket.status);
+
+  bodyEl.innerHTML = `
+    <div class="modal-info-grid">
+      <div class="modal-info-item">
+        <div class="modal-info-label">Category</div>
+        <div class="modal-info-value"><span class="badge badge-accent">${escapeHtml(ticket.category || 'General')}</span></div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Urgency Level</div>
+        <div class="modal-info-value">${urgencyBadge(ticket.urgency || 'Low')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Assigned Department</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg> ${escapeHtml(ticket.department || 'Not Assigned')}</div>
+      </div>
+
+      <div class="modal-info-item">
+        <div class="modal-info-label">Campus Location</div>
+        <div class="modal-info-value" style="display:inline-flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(ticket.location || 'Not Specified')}</div>
+      </div>
+
+      <div class="modal-info-item" style="grid-column: 1 / -1;">
+        <div class="modal-info-label">Date Ticket Raised</div>
+        <div class="modal-info-value" style="font-weight: 500; color: var(--text-muted);">${formatDate(ticket.created_at)}</div>
+      </div>
+    </div>
+
+    <div class="modal-problem-box">
+      <h4>Complaint Description</h4>
+      <p>${escapeHtml(ticket.problem || ticket.description || 'No detailed description available.')}</p>
+    </div>
+
+    ${ticket.image_url ? `
+    <div style="margin-top:16px;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Attached Photo (Cloudinary)</div>
+      <a href="${ticket.image_url}" target="_blank" rel="noopener noreferrer" title="Click to view full photo in new tab">
+        <img
+          src="${ticket.image_url}"
+          alt="Complaint photo"
+          style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block;cursor:pointer;"
+          loading="lazy"
+        />
+      </a>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;display:flex;align-items:center;gap:5px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg> Click image to open high-resolution photo in new tab</div>
+    </div>` : ''}
+  `;
+
+  footerEl.innerHTML = `
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      ${!isInProgress && !isResolved ? `
+        <button class="btn btn-secondary btn-sm" id="modal-inprogress-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Mark In Progress
+        </button>
+      ` : ''}
+
+      ${!isResolved ? `
+        <button class="btn btn-success btn-sm" id="modal-resolve-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="20 6 9 17 4 12"/></svg> Mark Resolved
+        </button>
+      ` : `
+        <span class="badge badge-resolved" style="padding: 6px 12px; font-size: .8rem; display:inline-flex; align-items:center; gap:4px;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" style="stroke:var(--success);"><polyline points="20 6 9 17 4 12"/></svg> Resolved</span>
+        <button class="btn btn-secondary btn-sm" id="modal-reopen-btn" style="display:inline-flex;align-items:center;gap:4px;">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Reopen Ticket
+        </button>
+      `}
+    </div>
+    <button class="btn btn-secondary" id="modal-close-action">Close</button>
+  `;
+
+  /* Attach modal buttons */
+  const modalResolveBtn = document.getElementById('modal-resolve-btn');
+  if (modalResolveBtn) {
+    modalResolveBtn.addEventListener('click', async () => {
+      await handleStatusUpdate(targetId, 'Resolved', modalResolveBtn);
+      openTicketModal(targetId);
+    });
+  }
+
+  const modalInProgressBtn = document.getElementById('modal-inprogress-btn');
+  if (modalInProgressBtn) {
+    modalInProgressBtn.addEventListener('click', async () => {
+      await handleStatusUpdate(targetId, 'In Progress', modalInProgressBtn);
+      openTicketModal(targetId);
+    });
+  }
+
+  const modalReopenBtn = document.getElementById('modal-reopen-btn');
+  if (modalReopenBtn) {
+    modalReopenBtn.addEventListener('click', async () => {
+      await handleStatusUpdate(targetId, 'Pending', modalReopenBtn);
+      openTicketModal(targetId);
+    });
+  }
+
+  const modalCloseAction = document.getElementById('modal-close-action');
+  if (modalCloseAction) {
+    modalCloseAction.addEventListener('click', closeTicketModal);
+  }
+
+  overlay.classList.add('visible');
+}
+
+function closeTicketModal() {
+  const overlay = document.getElementById('ticket-modal-overlay');
+  if (overlay) overlay.classList.remove('visible');
+}
+
+async function handleStatusUpdate(ticketId, newStatus, btn) {
   const originalHTML = btn.innerHTML;
   btn.disabled  = true;
   btn.innerHTML = '<span class="btn-spinner"></span>';
 
   try {
-    await resolveTicket(ticketId);
+    await updateTicketStatus(ticketId, newStatus);
 
     /* Update local state */
-    const idx = allTickets.findIndex(t => String(t.id) === String(ticketId));
-    if (idx !== -1) allTickets[idx].status = 'Resolved';
+    const idx = allTickets.findIndex(t =>
+      String(t.ticket_id) === String(ticketId) || String(t.id) === String(ticketId)
+    );
+    if (idx !== -1) allTickets[idx].status = newStatus;
 
     updateDashStats();
     renderTickets();
-    showToast(`Ticket #${ticketId} resolved successfully!`, 'success');
+    showToast(`Ticket ${ticketId} updated to "${newStatus}"!`, 'success');
   } catch (err) {
-    console.error('Resolve error:', err);
+    console.error('Status update error:', err);
     btn.disabled  = false;
     btn.innerHTML = originalHTML;
-    showToast(err.message || 'Failed to resolve ticket.', 'error');
+    showToast(err.message || 'Failed to update ticket status.', 'error');
   }
 }
 
+async function handleResolve(ticketId, btn) {
+  return handleStatusUpdate(ticketId, 'Resolved', btn);
+}
+
 function escapeHtml(str) {
-  return str
+  if (!str) return '';
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
