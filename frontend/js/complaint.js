@@ -379,11 +379,12 @@ function initComplaintForm() {
 
     const complaintText = textarea.value.trim();
 
-    /* Loading state */
+    /* Disable submit button while uploading photo & submitting complaint */
     submitBtn.disabled = true;
+    submitBtn.style.cursor = 'not-allowed';
     if (btnText) {
       btnText.innerHTML = capturedPhotoBase64
-        ? '<span class="btn-spinner"></span> Uploading photo & submitting…'
+        ? '<span class="btn-spinner"></span> Uploading photo to Cloudinary…'
         : '<span class="btn-spinner"></span> Submitting…';
     }
 
@@ -392,8 +393,12 @@ function initComplaintForm() {
     if (resultArea) resultArea.classList.remove('visible');
 
     try {
-      // Pass the Base64 photo (or null if none) — api.js will include it in the request
-      const ticket = await submitComplaint(complaintText, capturedPhotoBase64);
+      // Pass the Base64 photo and status callback to update button text dynamically
+      const ticket = await submitComplaint(complaintText, capturedPhotoBase64, (status) => {
+        if (btnText) {
+          btnText.innerHTML = `<span class="btn-spinner"></span> ${status}`;
+        }
+      });
       displayResult(ticket);
       showToast('Complaint submitted successfully!', 'success');
 
@@ -418,6 +423,7 @@ function initComplaintForm() {
       showToast(err.message || 'Failed to submit complaint. Please try again.', 'error', 6000);
     } finally {
       submitBtn.disabled = false;
+      submitBtn.style.cursor = 'pointer';
       if (btnText) {
         btnText.innerHTML = 'Submit Complaint <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:#fff;margin-left:4px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>';
       }

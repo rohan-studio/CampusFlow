@@ -1,0 +1,67 @@
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from models.ticket import Ticket
+
+def ticket_to_dict(ticket: Ticket) -> dict:
+    if not ticket:
+        return None
+    return {
+        "id": ticket.id,
+        "ticket_id": ticket.ticket_id,
+        "created_at": (ticket.created_at.isoformat() + "+05:30") if ticket.created_at else None,
+        "status": ticket.status,
+        "department": ticket.department,
+        "category": ticket.category,
+        "location": ticket.location,
+        "problem": ticket.problem,
+        "urgency": ticket.urgency,
+        "image_url": ticket.image_url
+    }
+
+def create_ticket(session: Session, analysis, department: str, image_url: str = None, submission_id: str = None) -> dict:
+    db_ticket = Ticket(
+        status="Pending",
+        department=department,
+        category=analysis.category,
+        location=analysis.location,
+        problem=analysis.problem,
+        urgency=analysis.urgency,
+        image_url=image_url,
+        submission_id=submission_id
+    )
+
+    try:
+        session.add(db_ticket)
+        session.flush()  # Assign ID from DB sequence
+        ticket_id = f"TKT-{db_ticket.id:03d}"
+        db_ticket.ticket_id = ticket_id
+        session.commit()
+        session.refresh(db_ticket)
+        return ticket_to_dict(db_ticket)
+    except Exception:
+        session.rollback()
+        raise
+
+def get_ticket_by_submission_id(session: Session, submission_id: str):
+    statement = select(Ticket).where(Ticket.submission_id == submission_id)
+    ticket = session.scalars(statement).first()
+    return ticket_to_dict(ticket) if ticket else None
+
+def get_ticket(session: Session, ticket_id: str):
+    statement = select(Ticket).where(Ticket.ticket_id == ticket_id)
+    ticket = session.scalars(statement).first()
+    return ticket_to_dict(ticket) if ticket else None
+
+def get_all_tickets(session: Session):
+    statement = select(Ticket).order_by(Ticket.id.desc())
+    tickets = session.scalars(statement).all()
+    return [ticket_to_dict(t) for t in tickets]
+
+def update_ticket_status(session: Session, ticket_id: str, new_status: str) -> bool:
+    statement = select(Ticket).where(Ticket.ticket_id == ticket_id)
+    ticket = session.scalars(statement).first()
+    if not ticket:
+        return False
+    ticket.status = new_status
+    session.commit()
+    return True

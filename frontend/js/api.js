@@ -3,19 +3,10 @@
  * Handles all communication with the backend REST API.
  */
 
-// Live Render backend URL (used when hosted on Cloudflare Pages or outside localhost)
-const PRODUCTION_BACKEND_URL = 'https://campusflow-imnt.onrender.com';
-
-const isLocal = typeof window !== 'undefined' && (
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1' ||
-  window.location.protocol === 'file:' ||
-  !window.location.hostname
-);
-
-const API_BASE = isLocal
-  ? (window.location.port === '8000' ? window.location.origin : 'http://127.0.0.1:8000')
-  : (window.CAMPUSFLOW_API_URL || PRODUCTION_BACKEND_URL);
+// Automatic origin detection (works seamlessly on localhost and production hosting)
+const API_BASE = (typeof window !== 'undefined' && window.location.origin && window.location.protocol.startsWith('http'))
+  ? window.location.origin
+  : 'http://127.0.0.1:8000';
 
 /**
  * Helper to convert Base64 Data URL to a native Blob
@@ -39,25 +30,81 @@ function generateSubmissionId() {
 }
 
 /**
+ * Direct client-to-Cloudinary upload helper.
+ * Uploads photo directly to Cloudinary using signed authorization from backend,
+ * completely bypassing Vercel/serverless 4.5MB payload limits.
+ * @param {Blob} photoBlob
+ * @returns {Promise<string>} Secure Cloudinary image URL
+ */
+async function uploadDirectToCloudinary(photoBlob) {
+  // 1. Fetch upload authorization signature from backend
+  const signRes = await fetch(`${API_BASE}/cloudinary-sign`);
+  if (!signRes.ok) {
+    throw new Error('Failed to retrieve Cloudinary upload authorization');
+  }
+  const signData = await signRes.json();
+
+  // 2. Post file directly to Cloudinary REST API
+  const cldFormData = new FormData();
+  cldFormData.append('file', photoBlob);
+  cldFormData.append('api_key', signData.api_key);
+  cldFormData.append('timestamp', signData.timestamp);
+  cldFormData.append('signature', signData.signature);
+
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloud_name}/image/upload`, {
+    method: 'POST',
+    body: cldFormData
+  });
+
+  if (!uploadRes.ok) {
+    const errorJson = await uploadRes.json().catch(() => ({}));
+    throw new Error(errorJson.error?.message || 'Direct Cloudinary upload failed');
+  }
+
+  const uploadData = await uploadRes.json();
+  return uploadData.secure_url;
+}
+
+/**
  * Submit a new complaint.
- * POST /complaint (multipart/form-data)
+ * 1. If photo is attached, uploads directly to Cloudinary
+ * 2. Sends complaint details + Cloudinary image_url to backend
+ * 3. Falls back gracefully to backend multipart upload if needed
  * @param {string} text - The complaint description text.
  * @param {Blob|File|string|null} photo - Optional photo (Blob, File, or Base64 Data URL).
+ * @param {Function|null} onStatusUpdate - Status callback during upload
  * @returns {Promise<Object>} Ticket object
  */
-async function submitComplaint(text, photo = null) {
+async function submitComplaint(text, photo = null, onStatusUpdate = null) {
+  let photoBlob = null;
+  if (photo) {
+    if (photo instanceof Blob || (typeof File !== 'undefined' && photo instanceof File)) {
+      photoBlob = photo;
+    } else if (typeof photo === 'string' && photo.startsWith('data:')) {
+      photoBlob = await dataURItoBlob(photo);
+    }
+  }
+
+  let imageUrl = null;
+  if (photoBlob) {
+    if (onStatusUpdate) onStatusUpdate('Uploading photo to Cloudinary…');
+    try {
+      imageUrl = await uploadDirectToCloudinary(photoBlob);
+    } catch (cldErr) {
+      console.warn('Direct Cloudinary upload failed, falling back to backend upload:', cldErr);
+    }
+  }
+
+  if (onStatusUpdate) onStatusUpdate('Analyzing with AI & submitting…');
+
   const formData = new FormData();
   formData.append('message', text);
   formData.append('submission_id', generateSubmissionId());
 
-  // Attach photo if provided
-  if (photo) {
-    if (photo instanceof Blob || (typeof File !== 'undefined' && photo instanceof File)) {
-      formData.append('photo', photo, photo.name || 'complaint_photo.jpg');
-    } else if (typeof photo === 'string' && photo.startsWith('data:')) {
-      const blob = await dataURItoBlob(photo);
-      formData.append('photo', blob, 'complaint_photo.jpg');
-    }
+  if (imageUrl) {
+    formData.append('image_url', imageUrl);
+  } else if (photoBlob) {
+    formData.append('photo', photoBlob, 'complaint_photo.jpg');
   }
 
   // Attach logged-in user session token if present
@@ -71,8 +118,6 @@ async function submitComplaint(text, photo = null) {
     reqHeaders['Authorization'] = `Bearer ${userToken}`;
   }
 
-  // NOTE: Do not set Content-Type header manually when sending FormData.
-  // The browser automatically sets multipart/form-data with the correct boundary.
   const response = await fetch(`${API_BASE}/complaint`, {
     method: 'POST',
     headers: reqHeaders,
