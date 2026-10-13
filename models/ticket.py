@@ -21,3 +21,5 @@ class Ticket(Base):
     urgency = Column(String)
     created_at = Column(DateTime, default=get_ist_now)
     image_url = Column(String)
+    submitted_by = Column(String, nullable=True)
+    user_college_id = Column(String, nullable=True)

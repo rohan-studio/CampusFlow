@@ -1,12 +1,13 @@
 import time
 import urllib.request
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 import cloudinary.uploader
 import cloudinary.utils
 from core.database import get_db
 import core.cloudinary
 from core.config import CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_CLOUD_NAME
+from core.security import decode_access_token
 from services.ai_service import analyze_complaint, moderate_image, find_department
 from services.ticket_service import create_ticket, get_ticket_by_submission_id
 
@@ -34,12 +35,30 @@ def get_cloudinary_signature():
 
 @router.post("/complaint")
 async def create_complaint(
+    request: Request,
     message: str = Form(...),
     photo: UploadFile | None = File(None),
     image_url: str | None = Form(None),
     submission_id: str = Form(...),
+    token: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
+    # Verify user token if provided or from Authorization header
+    user_token = token
+    if not user_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            user_token = auth_header.replace("Bearer ", "").strip()
+
+    submitted_by = "Campus Member"
+    user_college_id = None
+
+    if user_token:
+        payload = decode_access_token(user_token)
+        if payload:
+            submitted_by = payload.get("name", "Campus Member")
+            user_college_id = payload.get("sub")
+
     exist_ticket = get_ticket_by_submission_id(db, submission_id)
     if exist_ticket:
         return {
@@ -83,13 +102,15 @@ async def create_complaint(
         result = cloudinary.uploader.upload(image_data)
         image_url = result.get("secure_url")
 
-    # Create ticket in database with synchronized ticket details and image_url
+    # Create ticket in database with synchronized ticket details and user metadata
     ticket = create_ticket(
         db,
         analysis=analysis,
         department=department,
         image_url=image_url,
-        submission_id=submission_id
+        submission_id=submission_id,
+        submitted_by=submitted_by,
+        user_college_id=user_college_id
     )
 
     return {

@@ -54,6 +54,16 @@ def render_home(request: Request):
 def render_complaints(request: Request):
     return templates.TemplateResponse(request=request, name="complaints.html")
 
+@app.get("/login")
+@app.get("/login.html")
+def render_login(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html")
+
+@app.get("/register")
+@app.get("/register.html")
+def render_register(request: Request):
+    return templates.TemplateResponse(request=request, name="register.html")
+
 @app.get("/admin-login")
 @app.get("/admin-login.html")
 def render_admin_login(request: Request):

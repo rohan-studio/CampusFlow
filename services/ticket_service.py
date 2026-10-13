@@ -15,10 +15,20 @@ def ticket_to_dict(ticket: Ticket) -> dict:
         "location": ticket.location,
         "problem": ticket.problem,
         "urgency": ticket.urgency,
-        "image_url": ticket.image_url
+        "image_url": ticket.image_url,
+        "submitted_by": getattr(ticket, "submitted_by", None),
+        "user_college_id": getattr(ticket, "user_college_id", None)
     }
 
-def create_ticket(session: Session, analysis, department: str, image_url: str = None, submission_id: str = None) -> dict:
+def create_ticket(
+    session: Session,
+    analysis,
+    department: str,
+    image_url: str = None,
+    submission_id: str = None,
+    submitted_by: str = None,
+    user_college_id: str = None
+) -> dict:
     db_ticket = Ticket(
         status="Pending",
         department=department,
@@ -27,12 +37,14 @@ def create_ticket(session: Session, analysis, department: str, image_url: str = 
         problem=analysis.problem,
         urgency=analysis.urgency,
         image_url=image_url,
-        submission_id=submission_id
+        submission_id=submission_id,
+        submitted_by=submitted_by,
+        user_college_id=user_college_id
     )
 
     try:
         session.add(db_ticket)
-        session.flush()  # Assign ID from DB sequence
+        session.flush()
         ticket_id = f"TKT-{db_ticket.id:03d}"
         db_ticket.ticket_id = ticket_id
         session.commit()
