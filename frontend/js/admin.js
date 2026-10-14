@@ -25,8 +25,9 @@ function showToast(message, type = 'info', duration = 4000) {
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
     <span class="toast-icon">${icons[type] || icons.info}</span>
-    <span class="toast-message">${message}</span>
-    <span class="toast-close" role="button">✕</span>
+    <span class="toast-close" role="button" aria-label="Close">
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </span>
   `;
 
   container.appendChild(toast);

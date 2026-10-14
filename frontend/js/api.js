@@ -225,11 +225,17 @@ async function getTicket(ticketId) {
  * @returns {Promise<Object>} Updated ticket response.
  */
 async function updateTicketStatus(id, status) {
+  const reqHeaders = {
+    'Content-Type': 'application/json',
+  };
+  const adminToken = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('cf_token') : null;
+  if (adminToken) {
+    reqHeaders['Authorization'] = `Bearer ${adminToken}`;
+  }
+
   const response = await fetch(`${API_BASE}/tickets/${id}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: reqHeaders,
     body: JSON.stringify({ status: status }),
   });
 
@@ -266,9 +272,8 @@ async function checkBackendHealth() {
 }
 
 /**
- * Authenticate an admin user.
- * Since backend does not expose an admin login endpoint,
- * validates credentials client-side for dashboard access.
+ * Authenticate an admin user with the backend REST API.
+ * Validates against environment variables set in Vercel or database admin users.
  * @param {string} username - Admin username.
  * @param {string} password - Admin password.
  * @returns {Promise<Object>} Auth response: { token, username }
@@ -278,10 +283,27 @@ async function adminLogin(username, password) {
     throw new Error('Please enter both username and password.');
   }
 
-  // Simulated admin session token
+  const response = await fetch(`${API_BASE}/admin/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: username.trim(),
+      password: password,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const msg = errorData.detail || errorData.message || 'Invalid admin credentials. Access denied.';
+    throw new Error(msg);
+  }
+
+  const data = await response.json();
   return {
-    token: 'cf_session_' + Date.now(),
-    username: username,
+    token: data.token,
+    username: data.username || username,
   };
 }
 
