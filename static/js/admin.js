@@ -246,29 +246,43 @@ async function fetchTickets() {
   const spinner = document.getElementById('spinner');
   if (!grid) return;
 
-  if (spinner) spinner.style.display = 'flex';
-  grid.innerHTML = '';
+  /* 1. Instant cache render (0ms load time when opening dashboard) */
+  const cachedData = sessionStorage.getItem('cf_cached_tickets');
+  if (cachedData && allTickets.length === 0) {
+    try {
+      allTickets = JSON.parse(cachedData);
+      updateDashStats();
+      renderTickets();
+    } catch {}
+  } else if (allTickets.length === 0) {
+    if (spinner) spinner.style.display = 'flex';
+    grid.innerHTML = '';
+  }
 
+  /* 2. Fetch fresh data in background */
   try {
-    allTickets = await getAllTickets();
-    allTickets.sort((a, b) => {
+    const freshTickets = await getAllTickets();
+    allTickets = freshTickets.sort((a, b) => {
       if (a.created_at && b.created_at) {
         const timeDiff = new Date(b.created_at) - new Date(a.created_at);
         if (timeDiff !== 0) return timeDiff;
       }
       return (b.id || 0) - (a.id || 0);
     });
+    sessionStorage.setItem('cf_cached_tickets', JSON.stringify(allTickets));
     updateDashStats();
     renderTickets();
   } catch (err) {
     console.error('Failed to fetch tickets:', err);
-    grid.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
-        <h3>Could not load tickets</h3>
-        <p>${err.message || 'Please check your connection and try again.'}</p>
-      </div>`;
-    showToast('Failed to load tickets. ' + (err.message || ''), 'error');
+    if (allTickets.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon"><svg class="ui-icon" width="40" height="40" viewBox="0 0 24 24" style="stroke:var(--warning);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+          <h3>Could not load tickets</h3>
+          <p>${err.message || 'Please check your connection and try again.'}</p>
+        </div>`;
+      showToast('Failed to load tickets: ' + (err.message || ''), 'error');
+    }
   } finally {
     if (spinner) spinner.style.display = 'none';
   }
